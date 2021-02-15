@@ -12,5 +12,6 @@ class MainActivity : AppCompatActivity() {
     fun testKotlibFun(){
         //comment
         //office
+        //office through ide
     }
 }
