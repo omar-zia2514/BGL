@@ -10,6 +10,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun testKotlibFun(){
-        
+        //comment
     }
 }
