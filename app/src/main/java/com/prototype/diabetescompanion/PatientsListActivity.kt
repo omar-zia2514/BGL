@@ -3,15 +3,9 @@ package com.prototype.diabetescompanion
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 
-class MainActivity : AppCompatActivity() {
+class PatientsListActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-    }
-
-    fun testKotlibFun(){
-        //comment
-        //office
-        //office through ide
+        setContentView(R.layout.activity_patients_list)
     }
 }
