@@ -26,10 +26,10 @@ class SplashActivity : AppCompatActivity() {
         val typeFace: Typeface = Typeface.createFromAsset(assets, "fonts/NeogreyMedium.otf")
 
         binding.apply {
-            titleHalfLeft.setText("Diabetes".toUpperCase(Locale.getDefault()))
-            titleHalfRight.setText(" Companion".toUpperCase(Locale.getDefault()))
-            titleHalfLeft.setTypeface(typeFace)
-            titleHalfRight.setTypeface(typeFace)
+            titleHalfLeft.text = "Diabetes".toUpperCase(Locale.getDefault())
+            titleHalfRight.text = " Companion".toUpperCase(Locale.getDefault())
+            titleHalfLeft.typeface = typeFace
+            titleHalfRight.typeface = typeFace
         }
 
         val handler = Handler()
