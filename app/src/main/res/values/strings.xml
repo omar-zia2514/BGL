@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Diabetes Companion</string>
 
+    <string name="patients_list_header">Patient\'s List</string>
+    <string name="patients_detail_header">Patient\'s Detail</string>
+
     <string name="text_btn_doctor">I am a Doctor</string>
     <string name="text_btn_patient">I am a Patient</string>
     <string name="text_txt_mode_select">Are you a Doctor or a Patient?</string>
