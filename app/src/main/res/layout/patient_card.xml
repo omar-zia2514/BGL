@@ -37,8 +37,7 @@
                 app:layout_constraintEnd_toStartOf="@+id/divider"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                />
+                app:layout_constraintTop_toTopOf="parent"/>
 
             <TextView
                 android:id="@+id/patient_gender"
@@ -46,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:padding="10dp"
                 android:text="Male"
-                android:textSize="14sp"
+                android:textSize="18sp"
                 app:layout_constraintEnd_toStartOf="@+id/divider"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/patient_name"
@@ -58,7 +57,7 @@
                 android:layout_height="wrap_content"
                 android:padding="10dp"
                 android:text="39"
-                android:textSize="14sp"
+                android:textSize="18sp"
                 app:layout_constraintEnd_toStartOf="@+id/divider"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/patient_gender"
@@ -75,19 +74,21 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintLeft_toRightOf="@id/patient_name"
                 app:layout_constraintStart_toEndOf="@+id/divider"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                android:textColor="@android:color/holo_red_dark"/>
 
             <TextView
                 android:id="@+id/last_bgl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="10dp"
-                android:text="120 mg/dL"
-                android:textSize="14sp"
+                android:text="143 mg/dL"
+                android:textSize="18sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintLeft_toRightOf="@id/patient_name"
                 app:layout_constraintStart_toEndOf="@+id/divider"
-                app:layout_constraintTop_toBottomOf="@id/last_bgl_heading" />
+                app:layout_constraintTop_toBottomOf="@id/last_bgl_heading"
+                android:textColor="@android:color/holo_red_dark"/>
 
             <TextView
                 android:id="@+id/last_bgl_time"
@@ -95,11 +96,12 @@
                 android:layout_height="wrap_content"
                 android:padding="10dp"
                 android:text="1 day ago"
-                android:textSize="14sp"
+                android:textSize="18sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintLeft_toRightOf="@id/patient_gender"
                 app:layout_constraintStart_toEndOf="@+id/divider"
-                app:layout_constraintTop_toBottomOf="@id/last_bgl" />
+                app:layout_constraintTop_toBottomOf="@id/last_bgl"
+                android:textColor="@android:color/holo_red_dark"/>
 
             <View
                 android:id="@+id/divider"

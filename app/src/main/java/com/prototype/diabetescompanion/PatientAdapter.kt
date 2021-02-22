@@ -18,6 +18,8 @@ class PatientAdapter(var dataSet: ArrayList<Patient>, var ctx: Context) :
         var txtPatientGender: TextView =
             itemView.findViewById<View>(R.id.patient_gender) as TextView
         var txtPatientAge: TextView = itemView.findViewById<View>(R.id.patient_age) as TextView
+        var txtPatientBglHeading: TextView =
+            itemView.findViewById<View>(R.id.last_bgl_heading) as TextView
         var txtPatientBgl: TextView = itemView.findViewById<View>(R.id.last_bgl) as TextView
         var txtPatientBglTime: TextView =
             itemView.findViewById<View>(R.id.last_bgl_time) as TextView
@@ -28,10 +30,10 @@ class PatientAdapter(var dataSet: ArrayList<Patient>, var ctx: Context) :
 
         val view = LayoutInflater.from(parent.context).inflate(R.layout.patient_card, parent, false)
 
-        view.setOnClickListener({
+        view.setOnClickListener {
             ctx.startActivity(Intent(ctx,
                 PatientDetailActivity::class.java))
-        })
+        }
 
         return MyViewHolder(view)
     }
@@ -42,13 +44,29 @@ class PatientAdapter(var dataSet: ArrayList<Patient>, var ctx: Context) :
         val name: TextView = holder.txtPatientName
         val gender: TextView = holder.txtPatientGender
         val age: TextView = holder.txtPatientAge
+        val bglHeading: TextView = holder.txtPatientBglHeading
         val bgl: TextView = holder.txtPatientBgl
         val bglTime: TextView = holder.txtPatientBglTime
 
 
-        dataSet[position].name.also { name.text = it }
+        dataSet[position].name.toUpperCase().also {
+            name.text = it
+        }
         dataSet[position].gender.also { gender.text = it }
         dataSet[position].age.also { age.text = it.toString() }
+        if (position == 0 || position == 1 || position == 4) {
+            bglHeading.setTextColor(ctx.getColor(R.color.parrot_green_light))
+            bgl.setTextColor(ctx.getColor(R.color.parrot_green_light))
+            bglTime.setTextColor(ctx.getColor(R.color.parrot_green_light))
+        } else {
+            bglHeading.setTextColor(ctx.getColor(R.color.red))
+            bgl.setTextColor(ctx.getColor(R.color.red))
+            bglTime.setTextColor(ctx.getColor(R.color.red))
+        }
+
+        dataSet[position].lastBGLReading.also {
+            bglHeading.text = "Last Reading"
+        }
         dataSet[position].lastBGLReading.also { bgl.text = it }
         dataSet[position].lastBGLReadingTime.also { bglTime.text = it }
 

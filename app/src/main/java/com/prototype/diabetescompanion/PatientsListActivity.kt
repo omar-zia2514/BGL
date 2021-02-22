@@ -1,7 +1,13 @@
 package com.prototype.diabetescompanion
 
 import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -17,6 +23,8 @@ class PatientsListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPatientsListBinding
     private lateinit var ctx: Context
 
+    private lateinit var radioGroup: RadioGroup
+    private lateinit var radioButton: RadioButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +45,7 @@ class PatientsListActivity : AppCompatActivity() {
         patientsList.add(Patient(2, "Ayesha Sheikh", 47, "Female", "123 mg/dL", "8 hours ago"))
         patientsList.add(Patient(3, "Kamran Javaid", 65, "Male", "155 mg/dL", "16 hours ago"))
         patientsList.add(Patient(4, "Sana Altaf", 51, "Female", "158 mg/dL", "2 hours ago"))
-        patientsList.add(Patient(5, "Ahmad Rehan", 66, "Male", "123 mg/dL", "2 days ago"))
+        patientsList.add(Patient(5, "Ahmad Rehan", 66, "Male", "121 mg/dL", "2 days ago"))
         patientsList.add(Patient(6, "Asif Hussain", 68, "Male", "123 mg/dL", "2 days ago"))
         patientsList.add(Patient(7, "Nauman Ali", 61, "Male", "123 mg/dL", "2 days ago"))
 
@@ -45,6 +53,33 @@ class PatientsListActivity : AppCompatActivity() {
         var patientsAdapter = PatientAdapter(patientsList, ctx)
 
         binding.patientRecyclerview.adapter = patientsAdapter
-        binding.btnSettings.setOnClickListener({ onBackPressed() })
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(ctx,
+                SettingsActivity::class.java))
+        }
+
+        binding.extendedFab.setOnClickListener({ initEditDialog().show() })
+    }
+
+    private fun initEditDialog(): AlertDialog {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        val v: View = layoutInflater.inflate(R.layout.new_patient_form, null)
+        findViewByIdPromptDialog(v)
+        builder.setView(v)
+        builder.setPositiveButton("Save", DialogInterface.OnClickListener { dialog, id ->
+            val selectedId: Int = radioGroup.getCheckedRadioButtonId()
+            radioButton = v.findViewById<View>(selectedId) as RadioButton
+            radioButton.getText().toString()
+        })
+/*        builder.setNeutralButton("Delete", DialogInterface.OnClickListener { dialog, id ->
+
+        })*/
+        builder.setNegativeButton("Cancel",
+            DialogInterface.OnClickListener { dialog, id -> })
+        return builder.create()
+    }
+
+    private fun findViewByIdPromptDialog(v: View) {
+        radioGroup = v.findViewById<View>(R.id.main_radio_group) as RadioGroup
     }
 }

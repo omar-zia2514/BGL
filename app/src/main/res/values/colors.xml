@@ -9,9 +9,12 @@
     <color name="white">#FFFFFFFF</color>
 
     <color name="dark_grey">#424242</color>
+    <color name="dark_grey_shallow">#74424242</color>
     <color name="light_grey">#e0e0e0</color>
     <color name="parrot_green">#76ff03</color>
     <color name="parrot_green_light">#b0ff57</color>
     <color name="dark_green">#32cb00</color>
+    <color name="red">#D32F2F</color>
+
 
 </resources>
