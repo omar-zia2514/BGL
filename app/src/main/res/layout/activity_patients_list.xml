@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    tools:context=".PatientsListActivity">
+    tools:context=".view.PatientsListActivity">
 
     <ImageView
         android:id="@+id/btn_settings"
@@ -70,7 +70,6 @@
         android:id="@+id/group"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/parrot_green_light"
         app:constraint_referenced_ids="header, btn_settings"
         app:layout_constraintBottom_toBottomOf="@+id/head_divider"
         app:layout_constraintEnd_toEndOf="parent"

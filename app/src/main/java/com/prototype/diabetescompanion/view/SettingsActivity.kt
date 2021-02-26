@@ -1,4 +1,4 @@
-package com.prototype.diabetescompanion
+package com.prototype.diabetescompanion.view
 
 import android.content.Context
 import android.os.Bundle

@@ -1,4 +1,4 @@
-package com.prototype.diabetescompanion
+package com.prototype.diabetescompanion.adapter
 
 import android.content.Context
 import android.content.Intent
@@ -8,8 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.prototype.diabetescompanion.R
+import com.prototype.diabetescompanion.model.PatientModel
+import com.prototype.diabetescompanion.view.PatientDetailActivity
 
-class PatientAdapter(var dataSet: ArrayList<Patient>, var ctx: Context) :
+class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
     RecyclerView.Adapter<PatientAdapter.MyViewHolder>() {
 //    private val dataSet: ArrayList<Patient>? = null
 
@@ -49,27 +52,27 @@ class PatientAdapter(var dataSet: ArrayList<Patient>, var ctx: Context) :
         val bglTime: TextView = holder.txtPatientBglTime
 
 
-        dataSet[position].name.toUpperCase().also {
+        dataSet[position].Name.toUpperCase().also {
             name.text = it
         }
-        dataSet[position].gender.also { gender.text = it }
-        dataSet[position].age.also { age.text = it.toString() }
+
+        dataSet[position].Gender.also { gender.text = it }
+        dataSet[position].Age.also { age.text = it.toString() }
         if (position == 0 || position == 1 || position == 4) {
-            bglHeading.setTextColor(ctx.getColor(R.color.parrot_green_light))
-            bgl.setTextColor(ctx.getColor(R.color.parrot_green_light))
-            bglTime.setTextColor(ctx.getColor(R.color.parrot_green_light))
+//            bglHeading.setTextColor(ctx.getColor(R.color.parrot_green_light))
+//            bgl.setTextColor(ctx.getColor(R.color.parrot_green_light))
+//            bglTime.setTextColor(ctx.getColor(R.color.parrot_green_light))
         } else {
             bglHeading.setTextColor(ctx.getColor(R.color.red))
             bgl.setTextColor(ctx.getColor(R.color.red))
             bglTime.setTextColor(ctx.getColor(R.color.red))
         }
 
-        dataSet[position].lastBGLReading.also {
+        dataSet[position].LastReading.also {
             bglHeading.text = "Last Reading"
         }
-        dataSet[position].lastBGLReading.also { bgl.text = it }
-        dataSet[position].lastBGLReadingTime.also { bglTime.text = it }
-
+        dataSet[position].LastReading.also { bgl.text = it.toString() }
+        dataSet[position].LastReading.also { bglTime.text = it.toString() }
     }
 
     override fun getItemCount(): Int {

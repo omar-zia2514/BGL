@@ -1,4 +1,4 @@
-package com.prototype.diabetescompanion
+package com.prototype.diabetescompanion.adapter
 
 import android.util.Log
 import android.view.LayoutInflater
@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.prototype.diabetescompanion.Patient
+import com.prototype.diabetescompanion.R
 
 class PatientReadingsAdapter(var dataSet: ArrayList<Patient>) :
     RecyclerView.Adapter<PatientReadingsAdapter.MyViewHolder>() {

@@ -23,6 +23,7 @@
         android:background="@color/light_grey" />
 
     <EditText
+        android:id="@+id/etxt_patient_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:hint="Name of the patient"
@@ -33,6 +34,7 @@
         android:layout_marginVertical="12dp" />
 
     <EditText
+        android:id="@+id/etxt_patient_age"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:hint="Age of the patient"

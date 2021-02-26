@@ -1,16 +1,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.DiabetesCompanion" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.DiabetesCompanion" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">#b0ff57</item>
-        <item name="colorPrimaryVariant">#32cb00</item>
-        <item name="colorOnPrimary">@color/light_grey</item>
+        <item name="colorPrimary">@color/app_green</item>
+        <item name="colorPrimaryVariant">@color/app_green_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">#76ff03</item>
-        <item name="colorSecondaryVariant">#373737</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorSecondary">@color/app_green</item>
+        <item name="colorSecondaryVariant">@color/app_grey_light</item>
+        <item name="colorOnSecondary">@color/white</item>
         <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimary</item>
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryDark</item>
         <!-- Customize your theme here. -->
+        <item name="colorSurface" tools:targetApi="l">?attr/colorPrimary</item>
     </style>
 </resources>

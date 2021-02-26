@@ -1,18 +1,26 @@
-package com.prototype.diabetescompanion
+package com.prototype.diabetescompanion.view
 
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.prototype.diabetescompanion.Patient
+import com.prototype.diabetescompanion.R
+import com.prototype.diabetescompanion.adapter.PatientAdapter
 import com.prototype.diabetescompanion.databinding.ActivityPatientsListBinding
+import com.prototype.diabetescompanion.model.PatientModel
+import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
 
 class PatientsListActivity : AppCompatActivity() {
     lateinit var patientAdapter: PatientAdapter
@@ -21,56 +29,58 @@ class PatientsListActivity : AppCompatActivity() {
     private val data: ArrayList<Patient>? = null
 
     private lateinit var binding: ActivityPatientsListBinding
-    private lateinit var ctx: Context
 
     private lateinit var radioGroup: RadioGroup
     private lateinit var radioButton: RadioButton
 
+    lateinit var diabetesViewModel: DiabetesViewModel
+    lateinit var context: Context
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityPatientsListBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
-        ctx = this
-//        setContentView(R.layout.activity_patients_list)
+
+        context = this@PatientsListActivity
+
+        diabetesViewModel = ViewModelProvider(this).get(DiabetesViewModel::class.java)
 
         layoutManager = LinearLayoutManager(this)
         binding.patientRecyclerview.layoutManager = layoutManager
         binding.patientRecyclerview.itemAnimator = DefaultItemAnimator()
 
-        var patientsList: ArrayList<Patient> = arrayListOf()
-
-        patientsList.add(Patient(1, "Ali Muzzafar", 39, "Male", "120 mg/dL", "1 day ago"))
-        patientsList.add(Patient(2, "Ayesha Sheikh", 47, "Female", "123 mg/dL", "8 hours ago"))
-        patientsList.add(Patient(3, "Kamran Javaid", 65, "Male", "155 mg/dL", "16 hours ago"))
-        patientsList.add(Patient(4, "Sana Altaf", 51, "Female", "158 mg/dL", "2 hours ago"))
-        patientsList.add(Patient(5, "Ahmad Rehan", 66, "Male", "121 mg/dL", "2 days ago"))
-        patientsList.add(Patient(6, "Asif Hussain", 68, "Male", "123 mg/dL", "2 days ago"))
-        patientsList.add(Patient(7, "Nauman Ali", 61, "Male", "123 mg/dL", "2 days ago"))
+        diabetesViewModel.getAllPatients(context).observe(this, Observer {
+            var patientsAdapter = PatientAdapter(it, context)
+            binding.patientRecyclerview.adapter = patientsAdapter
+        })
 
 
-        var patientsAdapter = PatientAdapter(patientsList, ctx)
-
-        binding.patientRecyclerview.adapter = patientsAdapter
         binding.btnSettings.setOnClickListener {
-            startActivity(Intent(ctx,
+            startActivity(Intent(context,
                 SettingsActivity::class.java))
         }
-
-        binding.extendedFab.setOnClickListener({ initEditDialog().show() })
+        binding.extendedFab.setOnClickListener({ initNewPatientDialog().show() })
     }
 
-    private fun initEditDialog(): AlertDialog {
+    private fun initNewPatientDialog(): AlertDialog {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         val v: View = layoutInflater.inflate(R.layout.new_patient_form, null)
         findViewByIdPromptDialog(v)
         builder.setView(v)
-        builder.setPositiveButton("Save", DialogInterface.OnClickListener { dialog, id ->
-            val selectedId: Int = radioGroup.getCheckedRadioButtonId()
+        builder.setPositiveButton("Save") { dialog, id ->
+            val selectedId: Int = radioGroup.checkedRadioButtonId
             radioButton = v.findViewById<View>(selectedId) as RadioButton
-            radioButton.getText().toString()
-        })
+
+            val radioGenderValue: Int
+
+            val etxtPatientName = v.findViewById<View>(R.id.etxt_patient_name) as EditText
+            val etxtPatientAge = v.findViewById<View>(R.id.etxt_patient_age) as EditText
+
+            diabetesViewModel.insertData(context,
+                PatientModel(etxtPatientName.text.toString(), radioButton.text.toString(),
+                    etxtPatientAge.text.toString().toInt(10)))
+        }
 /*        builder.setNeutralButton("Delete", DialogInterface.OnClickListener { dialog, id ->
 
         })*/

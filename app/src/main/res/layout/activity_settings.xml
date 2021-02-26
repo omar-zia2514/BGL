@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SettingsActivity"
+    tools:context=".view.SettingsActivity"
     android:orientation="vertical">
 
     <LinearLayout
@@ -97,7 +97,6 @@
                 android:id="@+id/radioFrench"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
-                android:buttonTint="@color/parrot_green"
                 android:filterTouchesWhenObscured="true"
                 android:gravity="center|start"
                 android:textAlignment="textStart" />
@@ -106,7 +105,6 @@
                 android:id="@+id/radioEnglish"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
-                android:buttonTint="@color/parrot_green"
                 android:filterTouchesWhenObscured="true"
                 android:gravity="center|start"
                 android:textAlignment="textStart" />

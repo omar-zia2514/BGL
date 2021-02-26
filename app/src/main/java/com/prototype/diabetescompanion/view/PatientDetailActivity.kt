@@ -1,4 +1,4 @@
-package com.prototype.diabetescompanion
+package com.prototype.diabetescompanion.view
 
 import android.content.Context
 import android.content.DialogInterface
@@ -10,6 +10,9 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.prototype.diabetescompanion.Patient
+import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
+import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.databinding.ActivityPatientDetailBinding
 
 
