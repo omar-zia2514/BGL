@@ -51,7 +51,7 @@ class PatientsListActivity : AppCompatActivity() {
         binding.patientRecyclerview.itemAnimator = DefaultItemAnimator()
 
         diabetesViewModel.getAllPatients(context).observe(this, Observer {
-            var patientsAdapter = PatientAdapter(it, context)
+            val patientsAdapter = PatientAdapter(it, context)
             binding.patientRecyclerview.adapter = patientsAdapter
         })
 

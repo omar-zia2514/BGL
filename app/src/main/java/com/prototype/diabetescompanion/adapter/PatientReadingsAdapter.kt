@@ -1,15 +1,16 @@
 package com.prototype.diabetescompanion.adapter
 
+import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.prototype.diabetescompanion.Patient
 import com.prototype.diabetescompanion.R
+import com.prototype.diabetescompanion.model.BGLReading
 
-class PatientReadingsAdapter(var dataSet: ArrayList<Patient>) :
+class PatientReadingsAdapter(var dataSet: List<BGLReading>, var ctx: Context) :
     RecyclerView.Adapter<PatientReadingsAdapter.MyViewHolder>() {
 
     class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -36,8 +37,9 @@ class PatientReadingsAdapter(var dataSet: ArrayList<Patient>) :
         val timestamp: TextView = holder.txtReadingTimestamp
         val value: TextView = holder.txtReadingValue
 
-        dataSet[position].lastBGLReadingTime.also { timestamp.text = it }
-        dataSet[position].lastBGLReading.also { value.text = it }
+        dataSet[position].Timestamp.also { timestamp.text = it }
+        dataSet[position].PrickValue.toString()
+            .also { value.text = it + " <-2> " + dataSet[position].SensorValue.toString() }
     }
 
     override fun getItemCount(): Int {
