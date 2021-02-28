@@ -1,13 +1,10 @@
 package com.prototype.diabetescompanion.view
 
 import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
+import android.content.DialogInterface.OnShowListener
 import android.os.Bundle
 import android.view.View
-import android.widget.EditText
-import android.widget.RadioButton
-import android.widget.RadioGroup
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -41,6 +38,10 @@ class PatientsListActivity : AppCompatActivity() {
         binding = ActivityPatientsListBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+//        setTitle(R.string.patients_list_header)
+        getSupportActionBar()?.setTitle(resources.getString(R.string.patients_list_header))
+        getSupportActionBar()?.setDisplayHomeAsUpEnabled(true)
+        getSupportActionBar()?.setDisplayShowHomeEnabled(true)
 
         context = this@PatientsListActivity
 
@@ -56,37 +57,56 @@ class PatientsListActivity : AppCompatActivity() {
         })
 
 
-        binding.btnSettings.setOnClickListener {
+        /*binding.btnSettings.setOnClickListener {
             startActivity(Intent(context,
                 SettingsActivity::class.java))
-        }
-        binding.extendedFab.setOnClickListener({ initNewPatientDialog().show() })
+        }*/
+        binding.extendedFab.setOnClickListener({ initNewPatientDialog() })
     }
 
-    private fun initNewPatientDialog(): AlertDialog {
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
+    }
+
+    private fun initNewPatientDialog() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         val v: View = layoutInflater.inflate(R.layout.new_patient_form, null)
         findViewByIdPromptDialog(v)
         builder.setView(v)
-        builder.setPositiveButton("Save") { dialog, id ->
-            val selectedId: Int = radioGroup.checkedRadioButtonId
-            radioButton = v.findViewById<View>(selectedId) as RadioButton
 
-            val radioGenderValue: Int
-
-            val etxtPatientName = v.findViewById<View>(R.id.etxt_patient_name) as EditText
-            val etxtPatientAge = v.findViewById<View>(R.id.etxt_patient_age) as EditText
-
-            diabetesViewModel.insertData(context,
-                PatientModel(etxtPatientName.text.toString(), radioButton.text.toString(),
-                    etxtPatientAge.text.toString().toInt(10)))
-        }
+        builder.setPositiveButton("Save", null)
 /*        builder.setNeutralButton("Delete", DialogInterface.OnClickListener { dialog, id ->
 
         })*/
-        builder.setNegativeButton("Cancel",
-            DialogInterface.OnClickListener { dialog, id -> })
-        return builder.create()
+        builder.setNegativeButton("Cancel", null)
+
+        val dialog = builder.create()
+        dialog.setOnShowListener(OnShowListener {
+            val button: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            button.setOnClickListener(View.OnClickListener {
+                val selectedId: Int = radioGroup.checkedRadioButtonId
+                radioButton = v.findViewById<View>(selectedId) as RadioButton
+
+                val radioGenderValue: Int
+
+                val etxtPatientName = v.findViewById<View>(R.id.etxt_patient_name) as EditText
+                val etxtPatientAge = v.findViewById<View>(R.id.etxt_patient_age) as EditText
+
+                if (etxtPatientName.text.toString().trim()
+                        .isEmpty() || etxtPatientAge.text.toString().trim().isEmpty()
+                ) {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                } else {
+                    diabetesViewModel.insertData(context,
+                        PatientModel(etxtPatientName.text.toString(), radioButton.text.toString(),
+                            etxtPatientAge.text.toString().toInt(10)))
+                    //Dismiss once everything is OK.
+                    dialog.dismiss()
+                }
+            })
+        })
+        dialog.show()
     }
 
     private fun findViewByIdPromptDialog(v: View) {

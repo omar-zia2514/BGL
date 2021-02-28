@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.prototype.diabetescompanion.R
+import com.prototype.diabetescompanion.Util
 import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
 import com.prototype.diabetescompanion.databinding.ActivityPatientDetailBinding
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
@@ -32,7 +33,13 @@ class PatientDetailActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
+        getSupportActionBar()?.setTitle(resources.getString(R.string.patients_detail_header))
+        getSupportActionBar()?.setDisplayHomeAsUpEnabled(true)
+        getSupportActionBar()?.setDisplayShowHomeEnabled(true)
+        
         context = this@PatientDetailActivity
+        patientId = intent.getIntExtra("patientId", -1)
+        Util.makeLog("patientId received in details activity: $patientId")
 
         diabetesViewModel = ViewModelProvider(this).get(DiabetesViewModel::class.java)
 
@@ -47,7 +54,6 @@ class PatientDetailActivity : AppCompatActivity() {
 
         binding.patientReadingsRecyclerview.addItemDecoration(DividerItemDecoration(binding.patientReadingsRecyclerview.context,
             DividerItemDecoration.VERTICAL))
-        binding.btnBack.setOnClickListener { onBackPressed() }
         binding.extendedFab.setOnClickListener { initEditDialog().show() }
     }
 

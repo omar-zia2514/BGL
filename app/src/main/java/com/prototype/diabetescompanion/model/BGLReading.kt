@@ -2,13 +2,19 @@ package com.prototype.diabetescompanion.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.ForeignKey.CASCADE
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "BGLReadingTable")
+@Entity(tableName = "BGLReadingTable", foreignKeys = [
+    ForeignKey(entity = PatientModel::class,
+        parentColumns = ["id"],
+        childColumns = ["patientId"],
+        onDelete = CASCADE,
+        onUpdate = CASCADE)])
 
 class BGLReading(
     @ColumnInfo(name = "patientId")
-//    @ForeignKey()
     var PatientId: Int,
 
     @ColumnInfo(name = "timestamp")

@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.model.PatientModel
@@ -17,6 +18,8 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
 //    private val dataSet: ArrayList<Patient>? = null
 
     class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        var cardContainer: ConstraintLayout =
+            itemView.findViewById<View>(R.id.card_container_layout) as ConstraintLayout
         var txtPatientName: TextView = itemView.findViewById<View>(R.id.patient_name) as TextView
         var txtPatientGender: TextView =
             itemView.findViewById<View>(R.id.patient_gender) as TextView
@@ -33,16 +36,18 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
 
         val view = LayoutInflater.from(parent.context).inflate(R.layout.patient_card, parent, false)
 
-        view.setOnClickListener {
-            ctx.startActivity(Intent(ctx,
-                PatientDetailActivity::class.java))
-        }
-
         return MyViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         Log.d("uiDebug", "onBindViewHolder: $position")
+
+        holder.cardContainer.setOnClickListener {
+            val startPatientDetailsActivityIntent: Intent = Intent(ctx,
+                PatientDetailActivity::class.java)
+            startPatientDetailsActivityIntent.putExtra("patientId", dataSet[position].Id)
+            ctx.startActivity(startPatientDetailsActivityIntent)
+        }
 
         val name: TextView = holder.txtPatientName
         val gender: TextView = holder.txtPatientGender

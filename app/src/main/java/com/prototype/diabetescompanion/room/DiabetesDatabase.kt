@@ -4,9 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.prototype.diabetescompanion.model.BGLReading
 import com.prototype.diabetescompanion.model.PatientModel
 
-@Database(entities = [PatientModel::class], version = 1, exportSchema = false)
+@Database(entities = [PatientModel::class, BGLReading::class], version = 1, exportSchema = false)
 abstract class DiabetesDatabase : RoomDatabase() {
     abstract fun diabetesDAO(): DiabetesDAO
 
