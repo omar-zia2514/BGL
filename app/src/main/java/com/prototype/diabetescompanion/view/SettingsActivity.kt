@@ -1,26 +1,76 @@
 package com.prototype.diabetescompanion.view
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.prototype.diabetescompanion.R
+import com.prototype.diabetescompanion.SharedPreferences
 import com.prototype.diabetescompanion.databinding.ActivitySettingsBinding
 
 
 class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
-    private lateinit var ctx: Context
+    private lateinit var context: Context
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
-        ctx = this
 
-        /*    val snackbar: Snackbar = Snackbar
-                .make(view, "Archived", Snackbar.LENGTH_SHORT)
-                .setAction("UNDO", View.OnClickListener { })
-            snackbar.show()*/
+        supportActionBar?.title = resources.getString(R.string.title_settings_activity)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        context = this@SettingsActivity
+
+        setProfileValues()
+        setRadioListeners()
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        if (SharedPreferences.getSignedInProfile(context) == SharedPreferences.PROFILE_DOCTOR)
+            startActivity(Intent(context, PatientsListActivity::class.java))
+        else
+            startActivity(Intent(context, PatientActivity::class.java))
+        finish()
+        return true
+    }
+
+    override fun onBackPressed() {
+        onSupportNavigateUp()
+    }
+
+    private fun setProfileValues() {
+        if (SharedPreferences.getSignedInProfile(context) == SharedPreferences.PROFILE_DOCTOR)
+            binding.radioDoctor.isChecked = true
+        else
+            binding.radioPatient.isChecked = true
+
+    }
+
+    private fun setRadioListeners() {
+        binding.radioDoctor.setOnClickListener {
+            if (SharedPreferences.getSignedInProfile(context) == SharedPreferences.PROFILE_PATIENT) {
+                binding.radioDoctor.isChecked = true
+                binding.radioPatient.isChecked = false
+                SharedPreferences.setSignedInProfile(context, SharedPreferences.PROFILE_DOCTOR)
+                Toast.makeText(context, "You have switched to Doctor's profile",
+                    Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+        binding.radioPatient.setOnClickListener {
+            if (SharedPreferences.getSignedInProfile(context) == SharedPreferences.PROFILE_DOCTOR) {
+                binding.radioDoctor.isChecked = false
+                binding.radioPatient.isChecked = true
+                SharedPreferences.setSignedInProfile(context, SharedPreferences.PROFILE_PATIENT)
+                Toast.makeText(context,
+                    "You have switched to Patient's profile",
+                    Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
     }
 }

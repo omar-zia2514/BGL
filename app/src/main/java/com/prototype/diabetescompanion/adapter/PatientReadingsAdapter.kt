@@ -38,8 +38,12 @@ class PatientReadingsAdapter(var dataSet: List<BGLReading>, var ctx: Context) :
         val value: TextView = holder.txtReadingValue
 
         dataSet[position].Timestamp.also { timestamp.text = it }
-        dataSet[position].PrickValue.toString()
-            .also { value.text = it + " <-2> " + dataSet[position].SensorValue.toString() }
+
+        value.text =
+            dataSet[position].PrickValue.toString() + " mg/dL <---> " + dataSet[position].SensorValue + " mg/dL"
+
+//        dataSet[position].PrickValue.toString()
+//            .also { value.text = it + " <-> " + dataSet[position].SensorValue.toString() }
     }
 
     override fun getItemCount(): Int {

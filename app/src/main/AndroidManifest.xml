@@ -9,7 +9,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DiabetesCompanion">
-        <activity android:name=".view.SettingsActivity"/>
+        <activity android:name=".view.PatientActivity"></activity>
+        <activity android:name=".view.SettingsActivity" />
         <activity android:name=".view.PatientDetailActivity" />
         <activity android:name=".view.PatientsListActivity" />
         <activity
@@ -21,7 +22,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".view.ModeSelectActivity" />
+        <activity
+            android:name=".view.ModeSelectActivity"
+            android:noHistory="true" />
     </application>
 
 </manifest>

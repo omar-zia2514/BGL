@@ -3,6 +3,7 @@ package com.prototype.diabetescompanion.repository
 import android.content.Context
 import androidx.lifecycle.LiveData
 import com.prototype.diabetescompanion.model.BGLReading
+import com.prototype.diabetescompanion.model.PatientLastReadingVTable
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.room.DiabetesDatabase
 import kotlinx.coroutines.CoroutineScope
@@ -11,9 +12,15 @@ import kotlinx.coroutines.launch
 
 class DiabetesRepository {
     companion object {
-        fun insertData(context: Context, patient: PatientModel) {
+        fun insertPatient(context: Context, patient: PatientModel) {
             CoroutineScope(Dispatchers.IO).launch {
                 DiabetesDatabase.getDatabase(context).diabetesDAO().insertPatient(patient)
+            }
+        }
+
+        fun insertReading(context: Context, reading: BGLReading) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().insertReading(reading)
             }
         }
 
@@ -21,8 +28,39 @@ class DiabetesRepository {
             return DiabetesDatabase.getDatabase(context).diabetesDAO().getAllPatients()
         }
 
-        fun getAllReadingsWithPatientId(context: Context, patientId: Int): LiveData<List<BGLReading>> {
-            return DiabetesDatabase.getDatabase(context).diabetesDAO().getAllReadingsWithPatientId(patientId)
+        fun getPatientWithId(context: Context, patientId: Int): LiveData<PatientModel> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO().getPatientWithId(patientId)
+        }
+
+        fun getLastReadingOfPatient(
+            context: Context,
+            patientId: Int,
+        ): LiveData<BGLReading> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getLastReadingOfPatient(patientId)
+        }
+
+        fun getAllReadingsWithPatientId(
+            context: Context,
+            patientId: Int,
+        ): LiveData<List<BGLReading>> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getAllReadingsWithPatientId(patientId)
+        }
+
+        fun getPatientAndLastReading(
+            context: Context,
+            patientId: Int,
+        ): LiveData<PatientLastReadingVTable> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getPatientAndLastReading(patientId)
+        }
+
+        fun getAllPatientsAndLastReading(
+            context: Context,
+        ): LiveData<List<PatientLastReadingVTable>> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getAllPatientsAndLastReading()
         }
     }
 }

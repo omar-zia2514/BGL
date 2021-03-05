@@ -2,7 +2,10 @@ package com.prototype.diabetescompanion.view
 
 import android.content.Context
 import android.content.DialogInterface.OnShowListener
+import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -38,10 +41,7 @@ class PatientsListActivity : AppCompatActivity() {
         binding = ActivityPatientsListBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
-//        setTitle(R.string.patients_list_header)
-        getSupportActionBar()?.setTitle(resources.getString(R.string.patients_list_header))
-        getSupportActionBar()?.setDisplayHomeAsUpEnabled(true)
-        getSupportActionBar()?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.title = resources.getString(R.string.patients_list_header)
 
         context = this@PatientsListActivity
 
@@ -64,9 +64,22 @@ class PatientsListActivity : AppCompatActivity() {
         binding.extendedFab.setOnClickListener({ initNewPatientDialog() })
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finishAffinity()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.settings_menu, menu)
         return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == R.id.settings) {
+            startActivity(Intent(context, SettingsActivity::class.java))
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun initNewPatientDialog() {
@@ -98,7 +111,7 @@ class PatientsListActivity : AppCompatActivity() {
                 ) {
                     Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 } else {
-                    diabetesViewModel.insertData(context,
+                    diabetesViewModel.insertPatient(context,
                         PatientModel(etxtPatientName.text.toString(), radioButton.text.toString(),
                             etxtPatientAge.text.toString().toInt(10)))
                     //Dismiss once everything is OK.

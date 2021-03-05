@@ -76,8 +76,8 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
         dataSet[position].LastReading.also {
             bglHeading.text = "Last Reading"
         }
-        dataSet[position].LastReading.also { bgl.text = it.toString() }
-        dataSet[position].LastReading.also { bglTime.text = it.toString() }
+        dataSet[position].LastReading.also { bgl.text = "No data" }
+        dataSet[position].LastReading.also { bglTime.text = "No data" }
     }
 
     override fun getItemCount(): Int {
