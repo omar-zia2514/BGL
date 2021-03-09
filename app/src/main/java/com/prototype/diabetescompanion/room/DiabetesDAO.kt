@@ -1,10 +1,7 @@
 package com.prototype.diabetescompanion.room
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.prototype.diabetescompanion.model.BGLReading
 import com.prototype.diabetescompanion.model.PatientLastReadingVTable
 import com.prototype.diabetescompanion.model.PatientModel
@@ -13,6 +10,15 @@ import com.prototype.diabetescompanion.model.PatientModel
 interface DiabetesDAO {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertPatient(patient: PatientModel)
+
+    @Delete
+    suspend fun deletePatient(patient: PatientModel)
+
+    @Update
+    suspend fun updatePatient(patient: PatientModel)
+
+    @Query("DELETE FROM PatientTable WHERE id = :id")
+    suspend fun deletePatientWithId(id: Int)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertReading(reading: BGLReading)

@@ -46,4 +46,12 @@ class DiabetesViewModel : ViewModel() {
     ): LiveData<List<PatientLastReadingVTable>> {
         return DiabetesRepository.getAllPatientsAndLastReading(context)
     }
+
+    fun deletePatientWithId(context: Context, id: Int) {
+        DiabetesRepository.deletePatientWithId(context, id)
+    }
+
+    fun updatePatient(context: Context, patient: PatientModel) {
+        DiabetesRepository.updatePatient(context, patient)
+    }
 }

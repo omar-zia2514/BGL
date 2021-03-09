@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit/Delete"
+        android:textStyle="bold"
+        android:padding="12dp"
+        android:layout_margin="6dp"
+        android:textSize="18dp" />
+
+    <View
+        android:id="@+id/head_divider"
+        android:layout_width="150dp"
+        android:layout_height="1dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:background="@color/light_grey" />
+
+    <Button
+        android:id="@+id/btn_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit"
+        android:padding="8dp"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/btn_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete"
+        android:padding="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp" />
+
+
+</LinearLayout>

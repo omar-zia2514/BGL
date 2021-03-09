@@ -1,41 +1,36 @@
 package com.prototype.diabetescompanion.adapter
 
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
-import android.widget.Toast
+import android.view.WindowManager
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.Util
+import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.view.PatientDetailActivity
 
-class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
-    RecyclerView.Adapter<PatientAdapter.MyViewHolder>() {
-//    private val dataSet: ArrayList<Patient>? = null
 
-    class MyViewHolder(itemView: View, context: Context) : RecyclerView.ViewHolder(itemView) {
+class PatientAdapter(var ctx: Context) :
+    RecyclerView.Adapter<PatientAdapter.MyViewHolder>() {
+    lateinit var dataSet: List<PatientModel>
+
+    inner class MyViewHolder(itemView: View, context: Context) : RecyclerView.ViewHolder(itemView) {
         init {
             itemView.setOnLongClickListener {
                 val p = layoutPosition
-                Util.makeLog("LongClick: $p")
-                Toast.makeText(context, "LongClick: $p", Toast.LENGTH_SHORT).show()
+                initEditDeletePatientDialog(it, context, p)
                 true // returning true instead of false, works for me
             }
         }
-        /*fun MyViewHolder() {
-            super.itemView
-            itemView.setOnLongClickListener {
-                val p = layoutPosition
-                println("LongClick: $p")
-                true // returning true instead of false, works for me
-            }
-        }*/
 
         var cardContainer: ConstraintLayout =
             itemView.findViewById<View>(R.id.card_container_layout) as ConstraintLayout
@@ -49,6 +44,84 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
         var txtPatientBglTime: TextView =
             itemView.findViewById<View>(R.id.last_bgl_time) as TextView
 
+        private fun initEditDeletePatientDialog(view: View, context: Context, position: Int) {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            val v: View = LayoutInflater.from(view.context).inflate(R.layout.edit_delete_form, null)
+            var btnEdit = v.findViewById<View>(R.id.btn_edit) as Button
+            var btnDelete = v.findViewById<View>(R.id.btn_delete) as Button
+
+            builder.setView(v)
+            val dialog = builder.create()
+            dialog.show()
+            val lp = WindowManager.LayoutParams()
+
+            lp.copyFrom(dialog.getWindow()?.getAttributes())
+            lp.width = 600
+            lp.height = 650
+            dialog.getWindow()?.setAttributes(lp)
+
+            btnEdit.setOnClickListener(View.OnClickListener {
+                initEditPatientDialog(view, context, position)
+                dialog.dismiss()
+            })
+            btnDelete.setOnClickListener(View.OnClickListener {
+                (context as AdapterToActivity).onDelete(this@PatientAdapter.dataSet[position].Id)
+                dialog.dismiss()
+            })
+        }
+
+        private fun initEditPatientDialog(view: View, context: Context, position: Int) {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            val v: View = LayoutInflater.from(view.context).inflate(R.layout.edit_form, null)
+            var txtName = v.findViewById<View>(R.id.etxt_patient_name) as TextView
+            var txtAge = v.findViewById<View>(R.id.etxt_patient_age) as TextView
+            var txtGender = v.findViewById<View>(R.id.etxt_patient_age) as TextView
+            val radioGroup = v.findViewById<View>(R.id.main_radio_group) as RadioGroup
+
+            txtName.text = dataSet[position].Name
+            txtAge.text = dataSet[position].Age.toString()
+
+            if (dataSet[position].Gender.equals("Male"))
+                radioGroup.check(R.id.radio_male)
+            else
+                radioGroup.check(R.id.radio_female)
+
+            builder.setView(v)
+            builder.setPositiveButton("Update", null)
+
+            builder.setNegativeButton("Cancel", null)
+            val dialog = builder.create()
+
+            dialog.setOnShowListener(DialogInterface.OnShowListener {
+                val button: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                button.setOnClickListener(View.OnClickListener {
+                    val selectedId: Int = radioGroup.checkedRadioButtonId
+                    val radioButton = v.findViewById<View>(selectedId) as RadioButton
+
+                    val etxtPatientName = v.findViewById<View>(R.id.etxt_patient_name) as EditText
+                    val etxtPatientAge = v.findViewById<View>(R.id.etxt_patient_age) as EditText
+
+                    if (etxtPatientName.text.toString().trim()
+                            .isEmpty() || etxtPatientAge.text.toString().trim().isEmpty()
+                    ) {
+                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val updatedPatient = PatientModel(etxtPatientName.text.toString(),
+                            radioButton.text.toString(),
+                            etxtPatientAge.text.toString().toInt(10))
+                        updatedPatient.Id = this@PatientAdapter.dataSet[position].Id
+                        (context as AdapterToActivity).onUpdate(updatedPatient)
+                        dialog.dismiss()
+                    }
+                })
+            })
+            dialog.show()
+        }
+    }
+
+    fun setAdapterData(data: List<PatientModel>) {
+        dataSet = data
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -101,7 +174,9 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
     }
 
     override fun getItemCount(): Int {
-        Log.d("uiDebug", "PatientsList size: ${dataSet.size}")
-        return dataSet.size
+//        Log.d("uiDebug", "PatientsList size: ${dataSet.size}")
+        if (this::dataSet.isInitialized)
+            return dataSet.size
+        return 0
     }
 }

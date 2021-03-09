@@ -19,10 +19,11 @@ import com.prototype.diabetescompanion.Patient
 import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.adapter.PatientAdapter
 import com.prototype.diabetescompanion.databinding.ActivityPatientsListBinding
+import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
 
-class PatientsListActivity : AppCompatActivity() {
+class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
     lateinit var patientAdapter: PatientAdapter
     private var layoutManager: RecyclerView.LayoutManager? = null
     private val recyclerView: RecyclerView? = null
@@ -51,9 +52,12 @@ class PatientsListActivity : AppCompatActivity() {
         binding.patientRecyclerview.layoutManager = layoutManager
         binding.patientRecyclerview.itemAnimator = DefaultItemAnimator()
 
+        val patientsAdapter = PatientAdapter(context)
+        binding.patientRecyclerview.adapter = patientsAdapter
+
         diabetesViewModel.getAllPatients(context).observe(this, Observer {
-            val patientsAdapter = PatientAdapter(it, context)
-            binding.patientRecyclerview.adapter = patientsAdapter
+            (binding.patientRecyclerview.adapter as PatientAdapter).setAdapterData(it)
+
         })
 
 
@@ -124,5 +128,14 @@ class PatientsListActivity : AppCompatActivity() {
 
     private fun findViewByIdPromptDialog(v: View) {
         radioGroup = v.findViewById<View>(R.id.main_radio_group) as RadioGroup
+    }
+
+    override fun onDelete(id: Int?) {
+        if (id != null)
+            diabetesViewModel.deletePatientWithId(context, id)
+    }
+
+    override fun onUpdate(patient: PatientModel) {
+        diabetesViewModel.updatePatient(context, patient)
     }
 }

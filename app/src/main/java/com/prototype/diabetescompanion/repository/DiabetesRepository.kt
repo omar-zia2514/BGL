@@ -62,5 +62,17 @@ class DiabetesRepository {
             return DiabetesDatabase.getDatabase(context).diabetesDAO()
                 .getAllPatientsAndLastReading()
         }
+
+        fun deletePatientWithId(context: Context, id: Int) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().deletePatientWithId(id)
+            }
+        }
+
+        fun updatePatient(context: Context, patient: PatientModel) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().updatePatient(patient)
+            }
+        }
     }
 }
