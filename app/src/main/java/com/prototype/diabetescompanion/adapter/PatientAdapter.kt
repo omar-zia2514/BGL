@@ -7,9 +7,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.prototype.diabetescompanion.R
+import com.prototype.diabetescompanion.Util
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.view.PatientDetailActivity
 
@@ -17,7 +19,24 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
     RecyclerView.Adapter<PatientAdapter.MyViewHolder>() {
 //    private val dataSet: ArrayList<Patient>? = null
 
-    class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class MyViewHolder(itemView: View, context: Context) : RecyclerView.ViewHolder(itemView) {
+        init {
+            itemView.setOnLongClickListener {
+                val p = layoutPosition
+                Util.makeLog("LongClick: $p")
+                Toast.makeText(context, "LongClick: $p", Toast.LENGTH_SHORT).show()
+                true // returning true instead of false, works for me
+            }
+        }
+        /*fun MyViewHolder() {
+            super.itemView
+            itemView.setOnLongClickListener {
+                val p = layoutPosition
+                println("LongClick: $p")
+                true // returning true instead of false, works for me
+            }
+        }*/
+
         var cardContainer: ConstraintLayout =
             itemView.findViewById<View>(R.id.card_container_layout) as ConstraintLayout
         var txtPatientName: TextView = itemView.findViewById<View>(R.id.patient_name) as TextView
@@ -29,6 +48,7 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
         var txtPatientBgl: TextView = itemView.findViewById<View>(R.id.last_bgl) as TextView
         var txtPatientBglTime: TextView =
             itemView.findViewById<View>(R.id.last_bgl_time) as TextView
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -36,7 +56,7 @@ class PatientAdapter(var dataSet: List<PatientModel>, var ctx: Context) :
 
         val view = LayoutInflater.from(parent.context).inflate(R.layout.patient_card, parent, false)
 
-        return MyViewHolder(view)
+        return MyViewHolder(view, ctx)
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {

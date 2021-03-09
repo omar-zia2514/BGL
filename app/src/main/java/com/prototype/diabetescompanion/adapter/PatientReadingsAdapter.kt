@@ -40,7 +40,7 @@ class PatientReadingsAdapter(var dataSet: List<BGLReading>, var ctx: Context) :
         dataSet[position].Timestamp.also { timestamp.text = it }
 
         value.text =
-            dataSet[position].PrickValue.toString() + " mg/dL <---> " + dataSet[position].SensorValue + " mg/dL"
+            dataSet[position].PrickValue.toString() + " - " + dataSet[position].SensorValue
 
 //        dataSet[position].PrickValue.toString()
 //            .also { value.text = it + " <-> " + dataSet[position].SensorValue.toString() }

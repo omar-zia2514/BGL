@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.jjoe64.graphview.GraphView
+import com.jjoe64.graphview.LegendRenderer
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import com.prototype.diabetescompanion.R
@@ -67,7 +68,7 @@ class PatientDetailActivity : AppCompatActivity() {
                 binding.patientHead.lastBglTime.text = "No data"
             } else {
                 binding.patientHead.lastBgl.text =
-                    it.prickValue.toString() + " mg/dL <---> " + it.sensorValue + " mg/dL"
+                    it.prickValue.toString() + " - " + it.sensorValue
                 binding.patientHead.lastBglTime.text = it.timestamp
                 if (it.prickValue!! >= 120 || it.prickValue!! <= 60) {
                     binding.patientHead.lastBglHeading.setTextColor(getColor(R.color.red))
@@ -140,11 +141,15 @@ class PatientDetailActivity : AppCompatActivity() {
         val graph = findViewById<View>(R.id.graph) as GraphView
         graph.removeAllSeries()
         graph.title = "BGL Readings"
-        var labelRenderer = graph.gridLabelRenderer
+        graph.legendRenderer.isVisible = true
+        graph.legendRenderer.align = LegendRenderer.LegendAlign.TOP
+
+        val labelRenderer = graph.gridLabelRenderer
 //        labelRenderer.horizontalAxisTitle = "No of readings"
-//        labelRenderer.verticalAxisTitle = "Values"
+//        labelRenderer.verticalAxisTitle = "BGL Values"
         labelRenderer.numVerticalLabels = 20
         labelRenderer.numHorizontalLabels = allReadingsList.size
+//        labelRenderer.padding = 64
 
         graph.viewport.setMinX(1.toDouble())
         graph.viewport.setMaxX((allReadingsList.size).toDouble())
@@ -155,18 +160,38 @@ class PatientDetailActivity : AppCompatActivity() {
         graph.viewport.isXAxisBoundsManual = true
 
         val series: LineGraphSeries<DataPoint> = LineGraphSeries()
-        series.thickness = 8
+        series.thickness = 4
         series.isDrawDataPoints = true
         series.dataPointsRadius = 15.toFloat()
 //        series.isDrawBackground = true
-        series.setColor(getColor(R.color.app_green))
+        series.color = getColor(R.color.app_green)
+        series.title = "Prick Values"
         var counter = 1
-        for (entry in allReadingsList) {
-            series.appendData(DataPoint(counter.toDouble(), entry.PrickValue.toDouble()),
+        for (entry in allReadingsList.indices.reversed()) {
+            series.appendData(DataPoint(counter.toDouble(),
+                allReadingsList[entry].PrickValue.toDouble()),
+//                entry.PrickValue.toDouble()),
                 true, allReadingsList.size)
             counter++
         }
+
+        val seriesSensor: LineGraphSeries<DataPoint> = LineGraphSeries()
+        seriesSensor.thickness = 4
+        seriesSensor.isDrawDataPoints = true
+        seriesSensor.dataPointsRadius = 15.toFloat()
+        seriesSensor.color = getColor(R.color.red)
+        seriesSensor.title = "Sensor Values"
+//        series.isDrawBackground = true
+        var counterSensor = 1
+        for (entry in allReadingsList.indices.reversed()) {
+            seriesSensor.appendData(DataPoint(counterSensor.toDouble(),
+                allReadingsList[entry].SensorValue.toDouble()),
+//                entry.SensorValue.toDouble()),
+                true, allReadingsList.size)
+            counterSensor++
+        }
         graph.addSeries(series)
+        graph.addSeries(seriesSensor)
     }
 
     private fun initEditDialog(): AlertDialog {
