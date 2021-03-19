@@ -20,11 +20,11 @@ class BGLReading(
     @ColumnInfo(name = "timestamp")
     var Timestamp: String,
 
-    @ColumnInfo(name = "sensorValue")
-    var SensorValue: Int,
-
     @ColumnInfo(name = "prickValue")
     var PrickValue: Int,
+
+    @ColumnInfo(name = "sensorValue")
+    var SensorValue: Int,
 ) {
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")

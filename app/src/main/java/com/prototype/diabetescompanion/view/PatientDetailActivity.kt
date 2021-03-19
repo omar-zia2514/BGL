@@ -21,6 +21,7 @@ import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.LegendRenderer
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
+import com.prototype.diabetescompanion.DataPointWithTime
 import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.Util
 import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
@@ -138,58 +139,110 @@ class PatientDetailActivity : AppCompatActivity() {
     }
 
     private fun initGraph() {
-        val graph = findViewById<View>(R.id.graph) as GraphView
-        graph.removeAllSeries()
-        graph.title = "BGL Readings"
-        graph.legendRenderer.isVisible = true
-        graph.legendRenderer.align = LegendRenderer.LegendAlign.TOP
-
-        val labelRenderer = graph.gridLabelRenderer
-//        labelRenderer.horizontalAxisTitle = "No of readings"
-//        labelRenderer.verticalAxisTitle = "BGL Values"
-        labelRenderer.numVerticalLabels = 20
-        labelRenderer.numHorizontalLabels = allReadingsList.size
-//        labelRenderer.padding = 64
-
-        graph.viewport.setMinX(1.toDouble())
-        graph.viewport.setMaxX((allReadingsList.size).toDouble())
-        graph.viewport.setMinY(0.0)
-        graph.viewport.setMaxY(400.0)
-
-        graph.viewport.isYAxisBoundsManual = true
-        graph.viewport.isXAxisBoundsManual = true
-
         val series: LineGraphSeries<DataPoint> = LineGraphSeries()
-        series.thickness = 4
-        series.isDrawDataPoints = true
-        series.dataPointsRadius = 15.toFloat()
-//        series.isDrawBackground = true
-        series.color = getColor(R.color.app_green)
-        series.title = "Prick Values"
+        series.apply {
+            thickness = 4
+            isDrawDataPoints = true
+            dataPointsRadius = 10.toFloat()
+            color = getColor(R.color.app_green)
+            title = "Prick Values"
+        }
+
         var counter = 1
+        var maxY = 0
+        var minY = 400
+
+        var listOfPrickPoints = mutableListOf<DataPointWithTime>()
+
         for (entry in allReadingsList.indices.reversed()) {
+            if (allReadingsList[entry].PrickValue > maxY)
+                maxY = allReadingsList[entry].PrickValue
+            if (allReadingsList[entry].PrickValue < minY)
+                minY = allReadingsList[entry].PrickValue
+            listOfPrickPoints.add(DataPointWithTime(counter.toDouble(),
+                allReadingsList[entry].PrickValue.toDouble()))
             series.appendData(DataPoint(counter.toDouble(),
                 allReadingsList[entry].PrickValue.toDouble()),
-//                entry.PrickValue.toDouble()),
                 true, allReadingsList.size)
             counter++
         }
 
         val seriesSensor: LineGraphSeries<DataPoint> = LineGraphSeries()
-        seriesSensor.thickness = 4
-        seriesSensor.isDrawDataPoints = true
-        seriesSensor.dataPointsRadius = 15.toFloat()
-        seriesSensor.color = getColor(R.color.red)
-        seriesSensor.title = "Sensor Values"
+        seriesSensor.apply {
+            thickness = 4
+            isDrawDataPoints = true
+            dataPointsRadius = 10.toFloat()
+            color = getColor(R.color.red)
+            title = "Sensor Values"
+        }
 //        series.isDrawBackground = true
+
         var counterSensor = 1
         for (entry in allReadingsList.indices.reversed()) {
+            if (allReadingsList[entry].SensorValue > maxY)
+                maxY = allReadingsList[entry].SensorValue
+            if (allReadingsList[entry].SensorValue < minY)
+                minY = allReadingsList[entry].SensorValue
             seriesSensor.appendData(DataPoint(counterSensor.toDouble(),
                 allReadingsList[entry].SensorValue.toDouble()),
-//                entry.SensorValue.toDouble()),
                 true, allReadingsList.size)
             counterSensor++
         }
+
+        series.setOnDataPointTapListener { series1, dataPoint ->
+            var pointsCounter = 1
+            for (entry in allReadingsList.indices.reversed()) {
+                var point = DataPointWithTime(dataPoint.x, dataPoint.y)
+                var originalPoint = DataPointWithTime(pointsCounter.toDouble(),
+                    allReadingsList[entry].PrickValue.toDouble())
+                if (point == originalPoint)
+                    Toast.makeText(context,
+                        "${allReadingsList[entry].Timestamp} \nValue: ${dataPoint.y}",
+                        Toast.LENGTH_LONG).show()
+                pointsCounter++
+            }
+        }
+
+        seriesSensor.setOnDataPointTapListener { series1, dataPoint ->
+            var sensorPointsCounter = 1
+            for (entry in allReadingsList.indices.reversed()) {
+                var point = DataPointWithTime(dataPoint.x, dataPoint.y)
+                var originalPoint = DataPointWithTime(sensorPointsCounter.toDouble(),
+                    allReadingsList[entry].SensorValue.toDouble())
+                if (point == originalPoint)
+                    Toast.makeText(context,
+                        "${allReadingsList[entry].Timestamp} \nValue: ${dataPoint.y}",
+                        Toast.LENGTH_LONG).show()
+                sensorPointsCounter++
+            }
+        }
+
+        val graph = findViewById<View>(R.id.graph) as GraphView
+        graph.apply {
+            removeAllSeries()
+            title = "BGL Readings"
+            legendRenderer.isVisible = true
+            legendRenderer.align = LegendRenderer.LegendAlign.TOP
+            viewport.setMinX(1.toDouble())
+            viewport.setMaxX((allReadingsList.size).toDouble())
+            viewport.setMinY((minY - 20).toDouble())
+            viewport.setMaxY((maxY + 20).toDouble())
+            viewport.isYAxisBoundsManual = true
+            viewport.isXAxisBoundsManual = true
+            viewport.isScrollable = true
+            viewport.setScrollableY(true)
+            viewport.isScalable = true
+            viewport.setScalableY(true)
+        }
+
+        val labelRenderer = graph.gridLabelRenderer
+        labelRenderer.horizontalAxisTitle = "No of readings"
+        labelRenderer.verticalAxisTitle = "BGL Values"
+        labelRenderer.numVerticalLabels = 20
+        labelRenderer.numHorizontalLabels = allReadingsList.size
+        labelRenderer.padding = 50
+//        labelRenderer.setHorizontalLabelsAngle(90)
+
         graph.addSeries(series)
         graph.addSeries(seriesSensor)
     }
@@ -201,11 +254,18 @@ class PatientDetailActivity : AppCompatActivity() {
         val etxtSensorVal = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
         builder.setView(v)
         builder.setPositiveButton("Save") { dialog, id ->
+            val timestampString = Util.getCurrentTimeStamp()
+            val valuesString = etxtPrickVal.text.toString() + " - " + etxtSensorVal.text.toString()
             diabetesViewModel.insertReading(context,
                 BGLReading(patientId,
-                    Util.getCurrentTimeStamp(),
+                    timestampString,
                     etxtPrickVal.text.toString().toInt(),
                     etxtSensorVal.text.toString().toInt()))
+
+            diabetesViewModel.updatePatientLastReading(context,
+                patientId,
+                valuesString,
+                timestampString)
         }
         builder.setNeutralButton("Read BGL ", DialogInterface.OnClickListener { dialog, id ->
             Toast.makeText(context, "Not implemented yet", Toast.LENGTH_SHORT).show()

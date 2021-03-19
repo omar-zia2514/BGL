@@ -17,6 +17,9 @@ interface DiabetesDAO {
     @Update
     suspend fun updatePatient(patient: PatientModel)
 
+    @Query("UPDATE PatientTable set lastReading = :values, lastReadingTimestamp = :timestamp WHERE id = :patientId")
+    suspend fun updatePatientLastReading(patientId: Int, values: String, timestamp: String)
+
     @Query("DELETE FROM PatientTable WHERE id = :id")
     suspend fun deletePatientWithId(id: Int)
 

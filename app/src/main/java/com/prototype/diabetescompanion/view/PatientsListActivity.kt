@@ -56,16 +56,12 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
         binding.patientRecyclerview.adapter = patientsAdapter
 
         diabetesViewModel.getAllPatients(context).observe(this, Observer {
+
             (binding.patientRecyclerview.adapter as PatientAdapter).setAdapterData(it)
 
         })
 
-
-        /*binding.btnSettings.setOnClickListener {
-            startActivity(Intent(context,
-                SettingsActivity::class.java))
-        }*/
-        binding.extendedFab.setOnClickListener({ initNewPatientDialog() })
+        binding.extendedFab.setOnClickListener { initNewPatientDialog() }
     }
 
     override fun onBackPressed() {

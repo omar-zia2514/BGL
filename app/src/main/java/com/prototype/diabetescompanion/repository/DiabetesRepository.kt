@@ -74,5 +74,17 @@ class DiabetesRepository {
                 DiabetesDatabase.getDatabase(context).diabetesDAO().updatePatient(patient)
             }
         }
+
+        fun updatePatientLastReading(
+            context: Context,
+            patientId: Int,
+            values: String,
+            timestamp: String,
+        ) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO()
+                    .updatePatientLastReading(patientId, values, timestamp)
+            }
+        }
     }
 }

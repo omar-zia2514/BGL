@@ -14,11 +14,14 @@ class PatientModel(
 
     @ColumnInfo(name = "age")
     var Age: Int,
+
+    @ColumnInfo(name = "lastReading")
+    var LastReading: String? = null,
+
+    @ColumnInfo(name = "lastReadingTimestamp")
+    var LastReadingTimestamp: String? = null,
 ) {
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     var Id: Int? = null
-
-    @ColumnInfo(name = "lastReading")
-    var LastReading: Int = -1
 }

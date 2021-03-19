@@ -54,4 +54,13 @@ class DiabetesViewModel : ViewModel() {
     fun updatePatient(context: Context, patient: PatientModel) {
         DiabetesRepository.updatePatient(context, patient)
     }
+
+    fun updatePatientLastReading(
+        context: Context,
+        patientId: Int,
+        values: String,
+        timestamp: String,
+    ) {
+        DiabetesRepository.updatePatientLastReading(context, patientId, values, timestamp)
+    }
 }

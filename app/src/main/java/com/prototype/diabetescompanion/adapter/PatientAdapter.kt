@@ -1,22 +1,21 @@
 package com.prototype.diabetescompanion.adapter
 
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.prototype.diabetescompanion.R
-import com.prototype.diabetescompanion.Util
 import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.view.PatientDetailActivity
+import java.util.*
 
 
 class PatientAdapter(var ctx: Context) :
@@ -53,21 +52,21 @@ class PatientAdapter(var ctx: Context) :
             builder.setView(v)
             val dialog = builder.create()
             dialog.show()
-            val lp = WindowManager.LayoutParams()
 
+            /*val lp = WindowManager.LayoutParams()
             lp.copyFrom(dialog.getWindow()?.getAttributes())
-            lp.width = 600
-            lp.height = 650
+            lp.width = lp.width
+            lp.height = lp.height
             dialog.getWindow()?.setAttributes(lp)
-
-            btnEdit.setOnClickListener(View.OnClickListener {
+*/
+            btnEdit.setOnClickListener {
                 initEditPatientDialog(view, context, position)
                 dialog.dismiss()
-            })
-            btnDelete.setOnClickListener(View.OnClickListener {
-                (context as AdapterToActivity).onDelete(this@PatientAdapter.dataSet[position].Id)
+            }
+            btnDelete.setOnClickListener {
+                initDeleteConfirmationDialog(context, position)
                 dialog.dismiss()
-            })
+            }
         }
 
         private fun initEditPatientDialog(view: View, context: Context, position: Int) {
@@ -92,9 +91,9 @@ class PatientAdapter(var ctx: Context) :
             builder.setNegativeButton("Cancel", null)
             val dialog = builder.create()
 
-            dialog.setOnShowListener(DialogInterface.OnShowListener {
+            dialog.setOnShowListener {
                 val button: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                button.setOnClickListener(View.OnClickListener {
+                button.setOnClickListener {
                     val selectedId: Int = radioGroup.checkedRadioButtonId
                     val radioButton = v.findViewById<View>(selectedId) as RadioButton
 
@@ -108,15 +107,31 @@ class PatientAdapter(var ctx: Context) :
                     } else {
                         val updatedPatient = PatientModel(etxtPatientName.text.toString(),
                             radioButton.text.toString(),
-                            etxtPatientAge.text.toString().toInt(10))
+                            etxtPatientAge.text.toString().toInt(10),
+                            dataSet[position].LastReading,
+                            dataSet[position].LastReadingTimestamp)
                         updatedPatient.Id = this@PatientAdapter.dataSet[position].Id
                         (context as AdapterToActivity).onUpdate(updatedPatient)
                         dialog.dismiss()
                     }
-                })
-            })
+                }
+            }
             dialog.show()
         }
+    }
+
+    private fun initDeleteConfirmationDialog(context: Context, position: Int) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+
+        builder.setMessage("Are you sure?")
+        builder.setPositiveButton("Yes") { _, _ ->
+            (context as AdapterToActivity).onDelete(this@PatientAdapter.dataSet[position].Id)
+        }
+        builder.setNegativeButton("No") { dialog, _ ->
+            dialog.dismiss()
+        }
+        val dialog = builder.create()
+        dialog.show()
     }
 
     fun setAdapterData(data: List<PatientModel>) {
@@ -149,28 +164,36 @@ class PatientAdapter(var ctx: Context) :
         val bgl: TextView = holder.txtPatientBgl
         val bglTime: TextView = holder.txtPatientBglTime
 
+        val oldColors: ColorStateList =
+            holder.txtPatientName.textColors
 
-        dataSet[position].Name.toUpperCase().also {
+        dataSet[position].Name.toUpperCase(Locale.ROOT).also {
             name.text = it
         }
-
         dataSet[position].Gender.also { gender.text = it }
         dataSet[position].Age.also { age.text = it.toString() }
-        if (position == 0 || position == 1 || position == 4) {
-//            bglHeading.setTextColor(ctx.getColor(R.color.parrot_green_light))
-//            bgl.setTextColor(ctx.getColor(R.color.parrot_green_light))
-//            bglTime.setTextColor(ctx.getColor(R.color.parrot_green_light))
-        } else {
-            bglHeading.setTextColor(ctx.getColor(R.color.red))
-            bgl.setTextColor(ctx.getColor(R.color.red))
-            bglTime.setTextColor(ctx.getColor(R.color.red))
-        }
-
         dataSet[position].LastReading.also {
             bglHeading.text = "Last Reading"
         }
-        dataSet[position].LastReading.also { bgl.text = "No data" }
-        dataSet[position].LastReading.also { bglTime.text = "No data" }
+        if (dataSet[position].LastReading != null && dataSet[position].LastReadingTimestamp != null) {
+            dataSet[position].LastReading.also { bgl.text = it }
+            dataSet[position].LastReadingTimestamp.also { bglTime.text = it }
+
+            if (dataSet[position].LastReading!!.split(" ")[0].toInt() >= 120 || dataSet[position].LastReading!!.split(
+                    " ")[0].toInt() <= 60
+            ) {
+                bglHeading.setTextColor(ctx.getColor(R.color.red))
+                bgl.setTextColor(ctx.getColor(R.color.red))
+                bglTime.setTextColor(ctx.getColor(R.color.red))
+            } else {
+                bglHeading.setTextColor(oldColors)
+                bgl.setTextColor(oldColors)
+                bglTime.setTextColor(oldColors)
+            }
+        } else {
+            dataSet[position].LastReading.also { bgl.text = "No Data" }
+            dataSet[position].LastReadingTimestamp.also { bglTime.text = "No Data" }
+        }
     }
 
     override fun getItemCount(): Int {
