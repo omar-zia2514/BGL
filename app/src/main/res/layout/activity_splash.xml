@@ -4,7 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".view.SplashActivity"
-    android:background="@color/dark_grey">
+    android:background="@color/dark_grey"
+    android:alpha="0.7"
+    android:orientation="vertical"
+    android:gravity="center">
 
     <TextView
         android:id="@+id/title_half_left"
@@ -12,10 +15,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|center_horizontal"
         android:gravity="end"
-        android:layout_weight="1"
         android:textSize="24sp"
         android:textColor="@color/white"
-        android:textStyle="italic"/>
+        android:textStyle="italic" />
 
     <TextView
         android:id="@+id/title_half_right"
@@ -23,8 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|center_horizontal"
         android:gravity="start"
-        android:layout_weight="1"
         android:textSize="36sp"
-        android:textStyle="bold"/>
+        android:textStyle="bold" />
 
 </LinearLayout>

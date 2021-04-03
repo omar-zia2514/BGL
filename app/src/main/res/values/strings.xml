@@ -3,11 +3,21 @@
 
     <string name="select_mode_statement">Please select the application mode</string>
     <string name="patients_list_header">Patient\'s List</string>
+    <string name="patients_screen_title">Your BGL Data</string>
     <string name="patients_detail_header">Patient\'s Detail</string>
     <string name="title_settings_activity">Settings</string>
 
     <string name="text_btn_doctor">I am a Doctor</string>
     <string name="text_btn_patient">I am a Patient</string>
     <string name="text_txt_mode_select">Are you a Doctor or a Patient?</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="welcome">"Welcome !"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
 
 </resources>

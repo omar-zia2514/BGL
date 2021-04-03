@@ -6,7 +6,8 @@
 
     <color name="dark_grey">#424242</color>
     <color name="dark_grey_shallow">#74424242</color>
-    <color name="light_grey">#e0e0e0</color>
+    <color name="light_grey">#E0E0E0</color>
+    <color name="extreme_light_grey">#F4F4F4</color>
 
     <color name="app_green">#43a047</color>
     <color name="app_green_dark">#00701a</color>

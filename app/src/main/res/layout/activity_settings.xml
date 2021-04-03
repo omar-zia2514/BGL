@@ -6,27 +6,18 @@
     tools:context=".view.SettingsActivity"
     android:orientation="vertical">
 
-    <View
-        android:id="@+id/head_divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:background="@color/dark_grey_shallow" />
-
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="start"
-        android:paddingBottom="8dp"
-        android:paddingStart="16dp"
-        android:paddingTop="32dp"
-        android:text="APPLICATION MODE" />
+        android:padding="16dp"
+        android:text="APPLICATION MODE"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:background="@color/extreme_light_grey">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -67,7 +58,8 @@
                 android:layout_height="40dp"
                 android:filterTouchesWhenObscured="true"
                 android:gravity="center|start"
-                android:textAlignment="textStart" />
+                android:textAlignment="textStart"
+                android:buttonTint="@color/app_green"/>
 
             <RadioButton
                 android:id="@+id/radio_patient"
@@ -75,7 +67,8 @@
                 android:layout_height="40dp"
                 android:filterTouchesWhenObscured="true"
                 android:gravity="center|start"
-                android:textAlignment="textStart" />
+                android:textAlignment="textStart"
+                android:buttonTint="@color/app_green"/>
 
         </LinearLayout>
     </LinearLayout>
