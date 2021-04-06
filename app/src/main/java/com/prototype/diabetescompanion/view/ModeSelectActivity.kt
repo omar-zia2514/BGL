@@ -13,8 +13,6 @@ class ModeSelectActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
         binding = ActivityModeSelectBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
@@ -23,24 +21,36 @@ class ModeSelectActivity : AppCompatActivity() {
 
         binding.apply {
             btnDoctor.setOnClickListener {
-                SharedPreferences.setSignedInProfile(context,
-                    SharedPreferences.PROFILE_DOCTOR)
-                startActivity(
-                    Intent(
-                        context,
-                        PatientsListActivity::class.java
+                if (SharedPreferences.getDoctorCreated(context)) {
+                    SharedPreferences.setSignedInProfile(context,
+                        SharedPreferences.PROFILE_DOCTOR)
+                    startActivity(
+                        Intent(
+                            context,
+                            PatientsListActivity::class.java
+                        )
                     )
-                )
+                } else {
+                    val intent = Intent(context, SigninActivity::class.java)
+                    intent.putExtra("signInType", SharedPreferences.PROFILE_DOCTOR)
+                    startActivity(intent)
+                }
             }
             btnPatient.setOnClickListener {
-                SharedPreferences.setSignedInProfile(context,
-                    SharedPreferences.PROFILE_PATIENT)
-                startActivity(
-                    Intent(
-                        context,
-                        PatientActivity::class.java
+                if (SharedPreferences.getPatientCreated(context)) {
+                    SharedPreferences.setSignedInProfile(context,
+                        SharedPreferences.PROFILE_PATIENT)
+                    startActivity(
+                        Intent(
+                            context,
+                            PatientActivity::class.java
+                        )
                     )
-                )
+                } else {
+                    val intent = Intent(context, SigninActivity::class.java)
+                    intent.putExtra("signInType", SharedPreferences.PROFILE_PATIENT)
+                    startActivity(intent)
+                }
             }
         }
     }
