@@ -3,6 +3,7 @@ package com.prototype.diabetescompanion.repository
 import android.content.Context
 import androidx.lifecycle.LiveData
 import com.prototype.diabetescompanion.model.BGLReading
+import com.prototype.diabetescompanion.model.DoctorModel
 import com.prototype.diabetescompanion.model.PatientLastReadingVTable
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.room.DiabetesDatabase
@@ -15,6 +16,12 @@ class DiabetesRepository {
         fun insertPatient(context: Context, patient: PatientModel) {
             CoroutineScope(Dispatchers.IO).launch {
                 DiabetesDatabase.getDatabase(context).diabetesDAO().insertPatient(patient)
+            }
+        }
+
+        fun insertDoctor(context: Context, doctor: DoctorModel) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().insertDoctor(doctor)
             }
         }
 

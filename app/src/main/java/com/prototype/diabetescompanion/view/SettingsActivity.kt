@@ -55,21 +55,38 @@ class SettingsActivity : AppCompatActivity() {
             if (SharedPreferences.getSignedInProfile(context) == SharedPreferences.PROFILE_PATIENT) {
                 binding.radioDoctor.isChecked = true
                 binding.radioPatient.isChecked = false
-                SharedPreferences.setSignedInProfile(context, SharedPreferences.PROFILE_DOCTOR)
-                Toast.makeText(context, "You have switched to Doctor's profile",
-                    Toast.LENGTH_SHORT)
-                    .show()
+                if (SharedPreferences.getDoctorCreated(context)) {
+                    SharedPreferences.setSignedInProfile(context, SharedPreferences.PROFILE_DOCTOR)
+                    Toast.makeText(context, "You have switched to Doctor's profile",
+                        Toast.LENGTH_SHORT)
+                        .show()
+                } else {
+                    val intent = Intent(context, SignInActivity::class.java)
+                    intent.putExtra("signInType", SharedPreferences.PROFILE_DOCTOR)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                }
             }
         }
         binding.radioPatient.setOnClickListener {
             if (SharedPreferences.getSignedInProfile(context) == SharedPreferences.PROFILE_DOCTOR) {
                 binding.radioDoctor.isChecked = false
                 binding.radioPatient.isChecked = true
-                SharedPreferences.setSignedInProfile(context, SharedPreferences.PROFILE_PATIENT)
-                Toast.makeText(context,
-                    "You have switched to Patient's profile",
-                    Toast.LENGTH_SHORT)
-                    .show()
+                if (SharedPreferences.getPatientCreated(context)) {
+                    SharedPreferences.setSignedInProfile(context, SharedPreferences.PROFILE_PATIENT)
+                    Toast.makeText(context,
+                        "You have switched to Patient's profile",
+                        Toast.LENGTH_SHORT)
+                        .show()
+                } else {
+                    val intent = Intent(context, SignInActivity::class.java)
+                    intent.putExtra("signInType", SharedPreferences.PROFILE_PATIENT)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    startActivity(intent)
+                }
             }
         }
     }

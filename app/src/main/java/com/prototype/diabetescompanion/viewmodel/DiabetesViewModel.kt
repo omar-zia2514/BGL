@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import com.prototype.diabetescompanion.model.BGLReading
+import com.prototype.diabetescompanion.model.DoctorModel
 import com.prototype.diabetescompanion.model.PatientLastReadingVTable
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.repository.DiabetesRepository
@@ -12,6 +13,10 @@ class DiabetesViewModel : ViewModel() {
 
     fun insertPatient(context: Context, patient: PatientModel) {
         DiabetesRepository.insertPatient(context, patient)
+    }
+
+    fun insertDoctor(context: Context, doctor: DoctorModel) {
+        DiabetesRepository.insertDoctor(context, doctor)
     }
 
     fun insertReading(context: Context, reading: BGLReading) {

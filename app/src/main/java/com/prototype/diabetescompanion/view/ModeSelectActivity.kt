@@ -31,7 +31,7 @@ class ModeSelectActivity : AppCompatActivity() {
                         )
                     )
                 } else {
-                    val intent = Intent(context, SigninActivity::class.java)
+                    val intent = Intent(context, SignInActivity::class.java)
                     intent.putExtra("signInType", SharedPreferences.PROFILE_DOCTOR)
                     startActivity(intent)
                 }
@@ -47,7 +47,7 @@ class ModeSelectActivity : AppCompatActivity() {
                         )
                     )
                 } else {
-                    val intent = Intent(context, SigninActivity::class.java)
+                    val intent = Intent(context, SignInActivity::class.java)
                     intent.putExtra("signInType", SharedPreferences.PROFILE_PATIENT)
                     startActivity(intent)
                 }

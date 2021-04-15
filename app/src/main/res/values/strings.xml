@@ -5,6 +5,7 @@
     <string name="patients_list_header">Patient\'s List</string>
     <string name="patients_screen_title">Your BGL Data</string>
     <string name="patients_detail_header">Patient\'s Detail</string>
+    <string name="title_sigin_activity">SignIn</string>
     <string name="title_settings_activity">Settings</string>
 
     <string name="text_btn_doctor">I am a Doctor</string>

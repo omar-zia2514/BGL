@@ -12,8 +12,8 @@ class DoctorModel(
     @ColumnInfo(name = "number")
     var ContactNumber: String,
 
-    @ColumnInfo(name = "experience")
-    var Experience: Int,
+    @ColumnInfo(name = "designation")
+    var Designation: String,
 
     @ColumnInfo(name = "hospital")
     var Hospital: String,

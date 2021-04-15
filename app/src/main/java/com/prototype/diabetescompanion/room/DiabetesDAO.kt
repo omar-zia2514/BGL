@@ -3,6 +3,7 @@ package com.prototype.diabetescompanion.room
 import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.prototype.diabetescompanion.model.BGLReading
+import com.prototype.diabetescompanion.model.DoctorModel
 import com.prototype.diabetescompanion.model.PatientLastReadingVTable
 import com.prototype.diabetescompanion.model.PatientModel
 
@@ -10,6 +11,9 @@ import com.prototype.diabetescompanion.model.PatientModel
 interface DiabetesDAO {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertPatient(patient: PatientModel)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertDoctor(doctor: DoctorModel)
 
     @Delete
     suspend fun deletePatient(patient: PatientModel)
