@@ -60,6 +60,8 @@ class SettingsActivity : AppCompatActivity() {
                     Toast.makeText(context, "You have switched to Doctor's profile",
                         Toast.LENGTH_SHORT)
                         .show()
+                    startActivity(Intent(context, PatientsListActivity::class.java))
+                    finish()
                 } else {
                     val intent = Intent(context, SignInActivity::class.java)
                     intent.putExtra("signInType", SharedPreferences.PROFILE_DOCTOR)
@@ -79,6 +81,9 @@ class SettingsActivity : AppCompatActivity() {
                         "You have switched to Patient's profile",
                         Toast.LENGTH_SHORT)
                         .show()
+                    startActivity(Intent(context, PatientActivity::class.java))
+                    finish()
+
                 } else {
                     val intent = Intent(context, SignInActivity::class.java)
                     intent.putExtra("signInType", SharedPreferences.PROFILE_PATIENT)

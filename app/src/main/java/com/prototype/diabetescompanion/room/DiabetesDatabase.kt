@@ -34,6 +34,7 @@ abstract class DiabetesDatabase : RoomDatabase() {
                     Room.databaseBuilder(context, DiabetesDatabase::class.java, "DIABETES_DATABASE")
                         .fallbackToDestructiveMigration()
                         .addMigrations(MIGRATION_1_2)
+                        .allowMainThreadQueries()
                         .build()
                 return INSTANCE!!
             }

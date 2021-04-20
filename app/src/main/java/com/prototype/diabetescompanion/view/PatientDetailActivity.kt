@@ -11,7 +11,6 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -60,7 +59,7 @@ class PatientDetailActivity : AppCompatActivity() {
 
         diabetesViewModel = ViewModelProvider(this).get(DiabetesViewModel::class.java)
 
-        diabetesViewModel.getPatientAndLastReading(context, patientId).observe(this, Observer {
+        diabetesViewModel.getPatientAndLastReading(context, patientId).observe(this, {
             binding.patientHead.patientName.text = it.name?.toUpperCase(Locale.ROOT)
             binding.patientHead.patientGender.text = it.gender
             binding.patientHead.patientAge.text = it.age?.toString()

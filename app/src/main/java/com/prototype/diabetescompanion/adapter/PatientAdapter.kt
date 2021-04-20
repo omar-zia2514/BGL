@@ -105,7 +105,7 @@ class PatientAdapter(var ctx: Context) :
                     ) {
                         Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                     } else {
-                        val updatedPatient = PatientModel(etxtPatientName.text.toString(),
+                        val updatedPatient = PatientModel(etxtPatientName.text.toString(), "",
                             radioButton.text.toString(),
                             etxtPatientAge.text.toString().toInt(10),
                             dataSet[position].LastReading,

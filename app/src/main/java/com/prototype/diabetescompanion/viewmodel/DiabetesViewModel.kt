@@ -39,6 +39,10 @@ class DiabetesViewModel : ViewModel() {
         return DiabetesRepository.getAllReadingsWithPatientId(context, patientId)
     }
 
+    fun getOwnerPatientId(context: Context): LiveData<Int> {
+        return DiabetesRepository.getOwnerPatientId(context)
+    }
+
     fun getPatientAndLastReading(
         context: Context,
         patientId: Int,

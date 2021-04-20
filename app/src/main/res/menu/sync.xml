@@ -3,6 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/mode_switch"
+        android:title="GRAPH"
+        app:showAsAction="always"
+        android:icon="@drawable/graph_mode" />
+
+    <item
         android:id="@+id/sync"
         android:title="SYNC"
         app:showAsAction="always"

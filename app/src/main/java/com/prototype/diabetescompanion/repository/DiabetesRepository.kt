@@ -55,6 +55,13 @@ class DiabetesRepository {
                 .getAllReadingsWithPatientId(patientId)
         }
 
+        fun getOwnerPatientId(
+            context: Context
+        ): LiveData<Int> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getOwnerPatientId()
+        }
+
         fun getPatientAndLastReading(
             context: Context,
             patientId: Int,

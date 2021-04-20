@@ -30,18 +30,21 @@ interface DiabetesDAO {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertReading(reading: BGLReading)
 
-    @Query("SELECT * FROM PatientTable")
+    @Query("SELECT * FROM PatientTable WHERE doctorId = 0")
     fun getAllPatients(): LiveData<List<PatientModel>>
 
-    @Query("SELECT * FROM PatientTable WHERE Id = :patientId")
+    @Query("SELECT * FROM PatientTable WHERE id = :patientId")
     fun getPatientWithId(patientId: Int): LiveData<PatientModel>
 
     //        @Query("SELECT * FROM BGLReadingTable WHERE id=(SELECT max(id) FROM BGLReadingTable)")
     @Query("SELECT * FROM BGLReadingTable WHERE patientId = :patientId ORDER BY id LIMIT 1")
     fun getLastReadingOfPatient(patientId: Int): LiveData<BGLReading>
 
-    @Query("SELECT * FROM BGLReadingTable WHERE PatientId = :patientId ORDER BY id DESC")
+    @Query("SELECT * FROM BGLReadingTable WHERE patientId = :patientId ORDER BY id DESC")
     fun getAllReadingsWithPatientId(patientId: Int): LiveData<List<BGLReading>>
+
+    @Query("SELECT PatientTable.id FROM PatientTable WHERE PatientTable.doctorId = 1")
+    fun getOwnerPatientId(): LiveData<Int>
 
     @Query("SELECT PatientTable.name, PatientTable.gender, PatientTable.age, BGLReadingTable.sensorValue, BGLReadingTable.prickValue, BGLReadingTable.timestamp FROM PatientTable LEFT JOIN BGLReadingTable ON PatientTable.id = BGLReadingTable.patientId WHERE PatientTable.id = :patientId ORDER BY BGLReadingTable.id DESC")
     fun getPatientAndLastReading(patientId: Int): LiveData<PatientLastReadingVTable>
