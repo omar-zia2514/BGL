@@ -114,10 +114,6 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
             }, {
                 // Error in request
                 Util.makeLog("Volley error1: $it")
-
-
-
-
                 Util.makeLog("Volley error2: ${it.toString()}")
                 Util.makeLog("Volley error3: ${it.message}")
                 Util.makeLog("Volley error4: ${it.localizedMessage}")
