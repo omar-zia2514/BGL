@@ -81,7 +81,7 @@ class PatientDetailActivity : AppCompatActivity() {
                 }
             }
         })
-        diabetesViewModel.getAllReadingsWithPatientId(context, patientId).observe(this, {
+        diabetesViewModel.getAllReadingsLiveDataWithPatientId(context, patientId).observe(this, {
             val patientReadingsAdapter = PatientReadingsAdapter(it, context)
             binding.patientReadingsRecyclerview.adapter = patientReadingsAdapter
             allReadingsList = it

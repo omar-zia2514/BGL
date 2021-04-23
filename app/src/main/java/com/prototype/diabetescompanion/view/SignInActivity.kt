@@ -168,7 +168,7 @@ class SignInActivity : AppCompatActivity() {
             val mobileNumber = binding.etxtNumber.text.toString()
             val age = yearNow - yearOfBirth
             diabetesViewModel.insertPatient(context,
-                PatientModel(name, mobileNumber, selectedGender, age, DoctorId = 1))
+                PatientModel(name, mobileNumber, selectedGender, age, DoctorId = 0))
 
             SharedPreferences.setPatientCreated(context, true)
             SharedPreferences.setSignedInProfile(context,

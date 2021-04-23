@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.*
 import com.android.volley.toolbox.JsonObjectRequest
-import com.android.volley.toolbox.StringRequest
 import com.prototype.diabetescompanion.*
 import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.adapter.PatientAdapter
@@ -24,13 +23,11 @@ import com.prototype.diabetescompanion.databinding.ActivityPatientsListBinding
 import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
-import org.json.JSONException
 
 class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
     lateinit var patientAdapter: PatientAdapter
     private var layoutManager: RecyclerView.LayoutManager? = null
     private val recyclerView: RecyclerView? = null
-    private val data: ArrayList<Patient>? = null
 
     private lateinit var binding: ActivityPatientsListBinding
 
@@ -79,10 +76,7 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.sync -> {
-                syncDoctorData()
-            }
-
+            R.id.sync -> syncDoctorData()
             R.id.settings -> startActivity(Intent(context, SettingsActivity::class.java))
         }
         return super.onOptionsItemSelected(item)
@@ -91,97 +85,51 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
     fun syncDoctorData() {
         val url = "http://diabetescompanions.uk/api/SyncRecord"
 
-        // Post parameters
-        // Form fields and values
-
-        val stringRequestData =
-            "\"{\"DoctorId\\\":126,\\\"Name\\\":\\\"Dr Peter\\\",\\\"Age\\\":25,\\\"Address\\\":\\\"134 Upper Mall\\\",\\\"Specification\\\":\\\"HOD\\\",\\\"Experience\\\":15,\\\"SyncType\\\":0,\\\"Patients\\\":[{\\\"Id\\\":0,\\\"PatientId\\\":12,\\\"Name\\\":\\\"Usman\\\",\\\"Age\\\":25,\\\"Address\\\":\\\"4J Gulberg\\\",\\\"Gender\\\":\\\"HOD\\\",\\\"ContactNo\\\":\\\"03311224545\\\",\\\"OperationCode\\\":1,\\\"Readings\\\":[{\\\"ReadingdateTime\\\":\\\"2018-04-19 15:27:16.050\\\",\\\"SensorValue\\\":135,\\\"PrickValue\\\":130},{\\\"ReadingdateTime\\\":\\\"2018-04-19 15:27:16.050\\\",\\\"SensorValue\\\":132,\\\"PrickValue\\\":131}]},{\\\"Id\\\":1,\\\"PatientId\\\":12,\\\"Name\\\":\\\"Usman\\\",\\\"Age\\\":25,\\\"Address\\\":\\\"4J Gulberg\\\",\\\"Gender\\\":\\\"HOD\\\",\\\"ContactNo\\\":\\\"03311224545\\\",\\\"Readings\\\":[{\\\"ReadingdateTime\\\":\\\"2018-04-19 15:27:16.050\\\",\\\"SensorValue\\\":135,\\\"PrickValue\\\":130},{\\\"ReadingdateTime\\\":\\\"2018-04-19 15:27:16.050\\\",\\\"SensorValue\\\":132,\\\"PrickValue\\\":131}]}]}\""
-
-
-        // Volley post request with parameters
-        val request = object : JsonObjectRequest(Method.POST, url, JsonManager.getJson(),
-            { response ->
-                // Process the json
-                try {
-                    Util.makeLog("Response: $response")
-                    Toast.makeText(applicationContext,
-                        "Response," + response.toString() + "",
-                        Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    Util.makeLog("Exception: $e")
-                }
-
-            }, {
-                // Error in request
-                Util.makeLog("Volley error1: $it")
-
-
-
-
-                Util.makeLog("Volley error2: ${it.toString()}")
-                Util.makeLog("Volley error3: ${it.message}")
-                Util.makeLog("Volley error4: ${it.localizedMessage}")
-
-                Toast.makeText(applicationContext, "error," + it.toString() + "", Toast.LENGTH_LONG)
-                    .show()
-                // Toast.makeText(applicationContext, obj.getString("message"), Toast.LENGTH_LONG).show()
-            }) {
-            @Throws(AuthFailureError::class)
-            override fun getParams(): Map<String, String> {
-                val params = HashMap<String, String>()
-                params["Data"] = JsonManager.getJson().toString()
-                return params
-            }
-
-            override fun getHeaders(): MutableMap<String, String> {
-                val params: MutableMap<String, String> = java.util.HashMap()
-                params["Content-Type"] = "application/x-www-form-urlencoded"
-//                params["Content-Type"] = "application/json"
-                return params
-            }
+        var doctorData = diabetesViewModel.getDoctorData(context)
+        if (doctorData.patients?.size!! < 1) {
+            Toast.makeText(applicationContext, "Already synced", Toast.LENGTH_LONG)
+                .show()
+            return
         }
 
-        val stringRequest = object : StringRequest(Method.POST, url,
-            Response.Listener { response ->
-                try {
+        val request =
+            object : JsonObjectRequest(Method.POST, url, JsonManager.getDoctorSyncJson(doctorData),
+                { response ->
+                    // Process the json
+                    try {
+                        Util.makeLog("Response: $response")
+                        var patientId = 0
+                        diabetesViewModel.getOwnerPatientId(context).observe(this, {
+                            patientId = it
+                            diabetesViewModel.updateSyncStatusDoctor(context, patientId)
+                            diabetesViewModel.updateOnlineIdsDoctorSync(context,
+                                doctorData,
+                                response)
+                        })
 
-                    val obj = (response)
-                    Toast.makeText(applicationContext, "test " + obj + "", Toast.LENGTH_SHORT)
+
+                    } catch (e: Exception) {
+                        Util.makeLog("Exception: $e")
+                    }
+
+                }, {
+                    // Error in request
+                    Util.makeLog("Volley error1: $it")
+
+                    Toast.makeText(applicationContext,
+                        "error," + it.toString() + "",
+                        Toast.LENGTH_LONG)
                         .show()
-
                     // Toast.makeText(applicationContext, obj.getString("message"), Toast.LENGTH_LONG).show()
-                } catch (e: JSONException) {
-                    Toast.makeText(applicationContext,
-                        "response," + response.toString() + "",
-                        Toast.LENGTH_LONG).show()
-                    e.printStackTrace()
+                }) {
+                override fun getHeaders(): MutableMap<String, String> {
+                    val params: MutableMap<String, String> = java.util.HashMap()
+//                params["Content-Type"] = "application/x-www-form-urlencoded"
+                    params["Content-Type"] = "application/json"
+                    return params
                 }
-            },
-
-            object : Response.ErrorListener {
-                override fun onErrorResponse(volleyError: VolleyError) {
-                    Toast.makeText(applicationContext,
-                        "error," + volleyError.toString() + "",
-                        Toast.LENGTH_LONG).show()
-
-                }
-            }) {
-            @Throws(AuthFailureError::class)
-            override fun getParams(): Map<String, String> {
-                val params = HashMap<String, String>()
-                params["Data"] = JsonManager.getJson().toString()
-                return params
             }
 
-            override fun getHeaders(): MutableMap<String, String> {
-                val params: MutableMap<String, String> = java.util.HashMap()
-                params["Content-Type"] = "application/x-www-form-urlencoded"
-                // params.put("Content-Type", "application/json");
-
-//                params["Content-Type"] = "application/json"
-                return params
-            }
-        }
         // Volley request policy, only one time request to avoid duplicate transaction
         request.retryPolicy = DefaultRetryPolicy(
             DefaultRetryPolicy.DEFAULT_TIMEOUT_MS,

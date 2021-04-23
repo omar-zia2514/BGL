@@ -15,13 +15,13 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.DefaultRetryPolicy
+import com.android.volley.toolbox.JsonObjectRequest
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.LegendRenderer
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import com.prototype.diabetescompanion.DataPointWithTime
-import com.prototype.diabetescompanion.R
-import com.prototype.diabetescompanion.Util
+import com.prototype.diabetescompanion.*
 import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
 import com.prototype.diabetescompanion.databinding.ActivityPatientBinding
 import com.prototype.diabetescompanion.model.BGLReading
@@ -51,11 +51,12 @@ class PatientActivity : AppCompatActivity() {
 
         diabetesViewModel.getOwnerPatientId(context).observe(this, {
             patientId = it
-            diabetesViewModel.getAllReadingsWithPatientId(context, patientId).observe(this, {
-                val patientReadingsAdapter = PatientReadingsAdapter(it, context)
-                binding.patientReadingsRecyclerview.adapter = patientReadingsAdapter
-                allReadingsList = it
-            })
+            diabetesViewModel.getAllReadingsLiveDataWithPatientId(context, patientId)
+                .observe(this, {
+                    val patientReadingsAdapter = PatientReadingsAdapter(it, context)
+                    binding.patientReadingsRecyclerview.adapter = patientReadingsAdapter
+                    allReadingsList = it
+                })
         })
 
         layoutManager = LinearLayoutManager(this)
@@ -98,8 +99,62 @@ class PatientActivity : AppCompatActivity() {
                     switchToListView()
                 }
             }
+            R.id.sync -> syncPatientData()
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun syncPatientData() {
+        val url = "http://diabetescompanions.uk/api/SyncRecord"
+
+        var patientData = diabetesViewModel.getPatientData(context, patientId)
+        if (patientData.readings.size < 1) {
+            Toast.makeText(applicationContext, "Already synced", Toast.LENGTH_LONG)
+                .show()
+            return
+        }
+
+        val request = object :
+            JsonObjectRequest(Method.POST, url, JsonManager.getPatientSyncJson(patientData),
+                { response ->
+                    // Process the json
+                    try {
+                        Util.makeLog("Response: $response")
+                    diabetesViewModel.updateSyncStatusPatient(context, patientId)
+                        diabetesViewModel.updateOnlineIdsPatientSync(context, patientData, response)
+
+                    } catch (e: Exception) {
+                        Util.makeLog("Exception: $e")
+                    }
+
+                }, {
+                    // Error in request
+                    Util.makeLog("Volley error1: $it")
+
+                    Toast.makeText(applicationContext,
+                        "error," + it.toString() + "",
+                        Toast.LENGTH_LONG)
+                        .show()
+                    // Toast.makeText(applicationContext, obj.getString("message"), Toast.LENGTH_LONG).show()
+                }) {
+            override fun getHeaders(): MutableMap<String, String> {
+                val params: MutableMap<String, String> = java.util.HashMap()
+//                params["Content-Type"] = "application/x-www-form-urlencoded"
+                params["Content-Type"] = "application/json"
+                return params
+            }
+        }
+
+        // Volley request policy, only one time request to avoid duplicate transaction
+        request.retryPolicy = DefaultRetryPolicy(
+            DefaultRetryPolicy.DEFAULT_TIMEOUT_MS,
+            // 0 means no retry
+            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        // Add the volley post request to the request queue
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
     private fun switchToGraphView() {

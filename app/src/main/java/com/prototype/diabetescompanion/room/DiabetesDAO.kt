@@ -21,6 +21,18 @@ interface DiabetesDAO {
     @Update
     suspend fun updatePatient(patient: PatientModel)
 
+    @Query("UPDATE BGLReadingTable set syncStatus = 1 WHERE syncStatus = 0 AND patientId != :patientId")
+    suspend fun updateSyncStatusDoctor(patientId: Int)
+
+    @Query("UPDATE BGLReadingTable set syncStatus = 1 WHERE syncStatus = 0 AND patientId = :patientId")
+    suspend fun updateSyncStatusPatient(patientId: Int)
+
+    @Query("UPDATE DoctorTable set onlineId = :id")
+    suspend fun updateDoctorOnlineId(id: Int)
+
+    @Query("UPDATE PatientTable set onlineId = :onlineId WHERE id = :id")
+    suspend fun updatePatientOnlineId(id: Int, onlineId: Int)
+
     @Query("UPDATE PatientTable set lastReading = :values, lastReadingTimestamp = :timestamp WHERE id = :patientId")
     suspend fun updatePatientLastReading(patientId: Int, values: String, timestamp: String)
 
@@ -30,20 +42,35 @@ interface DiabetesDAO {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertReading(reading: BGLReading)
 
-    @Query("SELECT * FROM PatientTable WHERE doctorId = 0")
-    fun getAllPatients(): LiveData<List<PatientModel>>
+    @Query("SELECT * FROM PatientTable WHERE doctorId = 1")
+    fun getAllPatientsLiveData(): LiveData<List<PatientModel>>
+
+    @Query("SELECT * FROM PatientTable WHERE doctorId = 1")
+    fun getAllPatients(): List<PatientModel>
+
+    @Query("SELECT * FROM DoctorTable")
+    fun getDoctorData(): List<DoctorModel>
 
     @Query("SELECT * FROM PatientTable WHERE id = :patientId")
-    fun getPatientWithId(patientId: Int): LiveData<PatientModel>
+    fun getPatientLiveDataWithId(patientId: Int): LiveData<PatientModel>
+
+    @Query("SELECT * FROM PatientTable WHERE id = :patientId")
+    fun getPatientWithId(patientId: Int): PatientModel
 
     //        @Query("SELECT * FROM BGLReadingTable WHERE id=(SELECT max(id) FROM BGLReadingTable)")
     @Query("SELECT * FROM BGLReadingTable WHERE patientId = :patientId ORDER BY id LIMIT 1")
     fun getLastReadingOfPatient(patientId: Int): LiveData<BGLReading>
 
     @Query("SELECT * FROM BGLReadingTable WHERE patientId = :patientId ORDER BY id DESC")
-    fun getAllReadingsWithPatientId(patientId: Int): LiveData<List<BGLReading>>
+    fun getAllReadingsLiveDataWithPatientId(patientId: Int): LiveData<List<BGLReading>>
 
-    @Query("SELECT PatientTable.id FROM PatientTable WHERE PatientTable.doctorId = 1")
+    @Query("SELECT * FROM BGLReadingTable WHERE patientId = :patientId ORDER BY id DESC")
+    fun getAllReadingsWithPatientId(patientId: Int): List<BGLReading>
+
+    @Query("SELECT * FROM BGLReadingTable WHERE patientId = :patientId AND syncStatus = 0 ORDER BY id DESC")
+    fun getAllUnSyncedReadingsWithPatientId(patientId: Int?): List<BGLReading>
+
+    @Query("SELECT PatientTable.id FROM PatientTable WHERE PatientTable.doctorId = 0")
     fun getOwnerPatientId(): LiveData<Int>
 
     @Query("SELECT PatientTable.name, PatientTable.gender, PatientTable.age, BGLReadingTable.sensorValue, BGLReadingTable.prickValue, BGLReadingTable.timestamp FROM PatientTable LEFT JOIN BGLReadingTable ON PatientTable.id = BGLReadingTable.patientId WHERE PatientTable.id = :patientId ORDER BY BGLReadingTable.id DESC")

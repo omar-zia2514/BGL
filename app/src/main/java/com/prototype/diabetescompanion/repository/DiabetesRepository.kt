@@ -31,12 +31,22 @@ class DiabetesRepository {
             }
         }
 
-        fun getAllPatients(context: Context): LiveData<List<PatientModel>> {
+        fun getAllPatientsLiveData(context: Context): LiveData<List<PatientModel>> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO().getAllPatientsLiveData()
+        }
+
+        fun getAllPatients(context: Context): List<PatientModel> {
             return DiabetesDatabase.getDatabase(context).diabetesDAO().getAllPatients()
         }
 
-        fun getPatientWithId(context: Context, patientId: Int): LiveData<PatientModel> {
-            return DiabetesDatabase.getDatabase(context).diabetesDAO().getPatientWithId(patientId)
+        fun getPatienLiveDatatWithId(context: Context, patientId: Int): LiveData<PatientModel> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getPatientLiveDataWithId(patientId)
+        }
+
+        fun getPatientWithId(context: Context, patientId: Int): PatientModel {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getPatientWithId(patientId)
         }
 
         fun getLastReadingOfPatient(
@@ -47,16 +57,39 @@ class DiabetesRepository {
                 .getLastReadingOfPatient(patientId)
         }
 
-        fun getAllReadingsWithPatientId(
+        fun getAllReadingsLiveDataWithPatientId(
             context: Context,
             patientId: Int,
         ): LiveData<List<BGLReading>> {
             return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getAllReadingsLiveDataWithPatientId(patientId)
+        }
+
+        fun getAllReadingsWithPatientId(
+            context: Context,
+            patientId: Int,
+        ): List<BGLReading> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
                 .getAllReadingsWithPatientId(patientId)
         }
 
+        fun getAllUnSyncedReadingsWithPatientId(
+            context: Context,
+            patientId: Int?,
+        ): List<BGLReading> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getAllUnSyncedReadingsWithPatientId(patientId)
+        }
+
+        fun getDoctorData(
+            context: Context,
+        ): List<DoctorModel> {
+            return DiabetesDatabase.getDatabase(context).diabetesDAO()
+                .getDoctorData()
+        }
+
         fun getOwnerPatientId(
-            context: Context
+            context: Context,
         ): LiveData<Int> {
             return DiabetesDatabase.getDatabase(context).diabetesDAO()
                 .getOwnerPatientId()
@@ -86,6 +119,31 @@ class DiabetesRepository {
         fun updatePatient(context: Context, patient: PatientModel) {
             CoroutineScope(Dispatchers.IO).launch {
                 DiabetesDatabase.getDatabase(context).diabetesDAO().updatePatient(patient)
+            }
+        }
+
+        fun updateSyncStatusDoctor(context: Context, patientId: Int) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().updateSyncStatusDoctor(patientId)
+            }
+        }
+
+        fun updateSyncStatusPatient(context: Context, patientId: Int) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().updateSyncStatusPatient(patientId)
+            }
+        }
+
+        fun updateDoctorOnlineId(context: Context, id: Int) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().updateDoctorOnlineId(id)
+            }
+        }
+
+        fun updatePatientOnlineId(context: Context, id: Int, onlineId: Int) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO()
+                    .updatePatientOnlineId(id, onlineId)
             }
         }
 
