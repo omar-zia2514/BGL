@@ -1,56 +1,109 @@
 package com.prototype.diabetescompanion
 
+import com.prototype.diabetescompanion.model.DoctorModel
+import com.prototype.diabetescompanion.model.PatientModel
 import org.json.JSONArray
 import org.json.JSONObject
 
 public class JsonManager {
     companion object {
-        fun getJson(): JSONObject {
+        fun getDoctorSyncJson(doctorData: DoctorModel): JSONObject {
             try {
-                var readingsArray = JSONArray()
-
-                var reading1 = JSONObject()
-                reading1.put("ReadingdateTime", "2018-04-19 15:27:16.050")
-                reading1.put("SensorValue", 125)
-                reading1.put("PrickValue", 124)
-                reading1.put("ReadingdateTime", "2018-04-19 15:27:16.050")
-
-                var reading2 = JSONObject()
-                reading1.put("ReadingdateTime", "2018-04-19 15:27:16.050")
-                reading1.put("SensorValue", 130)
-                reading1.put("PrickValue", 129)
-                reading1.put("ReadingdateTime", "2018-04-19 15:27:16.050")
-
-                readingsArray.put(reading1)
-                readingsArray.put(reading2)
-
-                var patient1 = JSONObject()
-                patient1.put("Id", 1)
-                patient1.put("PatientId", 7)
-                patient1.put("Name", "Ben")
-                patient1.put("Age", 36)
-                patient1.put("Address", "Wisconsin")
-                patient1.put("Gender", "Male")
-                patient1.put("Address", "Wisconsin")
-                patient1.put("ContactNo", "03331234567")
-                patient1.put("OperationCode", 1)
-                patient1.put("Readings", readingsArray)
-
                 var patientArray = JSONArray()
-                patientArray.put(patient1)
 
-                var doctor = JSONObject()
-                doctor.put("DoctorId", 11)
-                doctor.put("Name", "Dr Paul")
-                doctor.put("Age", 49)
-                doctor.put("Address", "Miami")
-                doctor.put("Specification", "RM")
-                doctor.put("Experience", 13)
-                doctor.put("SyncType", 0)
-                doctor.put("Patients", patientArray)
+                for (patient in doctorData.patients!!) {
+                    val patientJson = JSONObject()
+                    val readingsArray = JSONArray()
+                    if (patient.OnlineId == -1) {
+                        patientJson.put("PatientId", 0)
+                        patientJson.put("OperationCode", 0)
+                    } else {
+                        patientJson.put("PatientId", patient.OnlineId)
+                        patientJson.put("OperationCode", 1)
+                    }
+                    patientJson.put("Name", patient.Name)
+                    patientJson.put("Age", patient.Age)
+                    patientJson.put("Address", "")
+                    patientJson.put("Gender", patient.Gender)
+                    patientJson.put("ContactNo", patient.ContactNumber)
+                    patientJson.put("Readings", readingsArray)
 
-                Util.makeLog("Json Created: $doctor")
-                return doctor
+                    for (reading in patient.readings) {
+                        val readingJson = JSONObject()
+                        readingJson.put("ReadingdateTime",
+                            reading.Timestamp)
+                        readingJson.put("SensorValue", reading.SensorValue)
+                        readingJson.put("PrickValue", reading.PrickValue)
+                        readingsArray.put(readingJson)
+                    }
+                    patientArray.put(patientJson)
+                }
+
+                val doctorJson = JSONObject()
+                if (doctorData.OnlineId == -1)
+                    doctorJson.put("DoctorId", 0)
+                else
+                    doctorJson.put("DoctorId", doctorData.OnlineId)
+                doctorJson.put("Name", doctorData.Name)
+                doctorJson.put("Age", 0)
+                doctorJson.put("Address", doctorData.Hospital)
+                doctorJson.put("Specification", doctorData.Designation)
+                doctorJson.put("ContactNo", doctorData.ContactNumber)
+                doctorJson.put("Experience", 0)
+                doctorJson.put("SyncType", 0)
+                doctorJson.put("Patients", patientArray)
+
+                Util.makeLog("Json Created: $doctorJson")
+                return doctorJson
+            } catch (e: Exception) {
+                Util.makeLog("Exception in JSON builder: ${e.message}")
+                return JSONObject()
+            }
+        }
+
+        fun getPatientSyncJson(patientData: PatientModel): JSONObject {
+            try {
+                var patientArray = JSONArray()
+
+                val patientJson = JSONObject()
+                val readingsArray = JSONArray()
+                if (patientData.OnlineId == -1) {
+                    patientJson.put("PatientId", 0)
+                    patientJson.put("OperationCode", 0)
+                } else {
+                    patientJson.put("PatientId", patientData.OnlineId)
+                    patientJson.put("OperationCode", 1)
+                }
+                patientJson.put("Name", patientData.Name)
+                patientJson.put("Age", patientData.Age)
+                patientJson.put("Address", "")
+                patientJson.put("Gender", patientData.Gender)
+                patientJson.put("ContactNo", patientData.ContactNumber)
+                patientJson.put("Readings", readingsArray)
+
+                for (reading in patientData.readings) {
+                    val readingJson = JSONObject()
+                    readingJson.put("ReadingdateTime",
+                        reading.Timestamp)
+                    readingJson.put("SensorValue", reading.SensorValue)
+                    readingJson.put("PrickValue", reading.PrickValue)
+                    readingsArray.put(readingJson)
+                }
+                patientArray.put(patientJson)
+
+                val doctorJson = JSONObject()
+                doctorJson.put("DoctorId", 0)
+                doctorJson.put("Name", "")
+                doctorJson.put("Age", 0)
+                doctorJson.put("Address", "")
+                doctorJson.put("Specification", "")
+                doctorJson.put("ContactNo", "")
+                doctorJson.put("Experience", 0)
+                doctorJson.put("SyncType", 1)
+                doctorJson.put("Patients", patientArray)
+
+                Util.makeLog("Json Created: $doctorJson")
+                return doctorJson
             } catch (e: Exception) {
                 Util.makeLog("Exception in JSON builder: ${e.message}")
                 return JSONObject()

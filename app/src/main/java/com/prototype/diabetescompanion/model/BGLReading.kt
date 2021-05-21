@@ -25,7 +25,11 @@ class BGLReading(
 
     @ColumnInfo(name = "sensorValue")
     var SensorValue: Int,
-) {
+
+    @ColumnInfo(name = "syncStatus")
+    var SyncStatus: Int = 0,
+
+    ) {
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     var Id: Int? = null

@@ -2,6 +2,7 @@ package com.prototype.diabetescompanion.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "PatientTable")
@@ -25,9 +26,15 @@ class PatientModel(
     var LastReadingTimestamp: String? = null,
 
     @ColumnInfo(name = "doctorId")
-    var DoctorId: Int = 0,
+    var DoctorId: Int = 1,
+
+    @ColumnInfo(name = "onlineId")
+    var OnlineId: Int = -1,
 ) {
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     var Id: Int? = null
+
+    @Ignore
+    lateinit var readings: ArrayList<BGLReading>
 }
