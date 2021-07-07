@@ -129,6 +129,18 @@ class DiabetesRepository {
             }
         }
 
+        fun deleteReadingWithId(context: Context, id: Int) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().deleteReadingWithId(id)
+            }
+        }
+
+        fun updatePatient(context: Context, reading: BGLReading) {
+            CoroutineScope(Dispatchers.IO).launch {
+                DiabetesDatabase.getDatabase(context).diabetesDAO().updateReading(reading)
+            }
+        }
+
         fun updateSyncStatusDoctor(context: Context, patientId: Int) {
             CoroutineScope(Dispatchers.IO).launch {
                 DiabetesDatabase.getDatabase(context).diabetesDAO()

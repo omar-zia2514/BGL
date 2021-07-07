@@ -21,6 +21,9 @@ interface DiabetesDAO {
     @Update
     suspend fun updatePatient(patient: PatientModel)
 
+    @Update
+    suspend fun updateReading(reading: BGLReading)
+
     @Query("UPDATE BGLReadingTable set syncStatus = 1 WHERE syncStatus = 0 AND patientId != :patientId")
     suspend fun updateSyncStatusDoctor(patientId: Int)
 
@@ -41,6 +44,9 @@ interface DiabetesDAO {
 
     @Query("DELETE FROM PatientTable WHERE id = :id")
     suspend fun deletePatientWithId(id: Int)
+
+    @Query("DELETE FROM BGLReadingTable WHERE id = :id")
+    suspend fun deleteReadingWithId(id: Int)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertReading(reading: BGLReading)

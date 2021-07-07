@@ -5,8 +5,8 @@ class PatientLastReadingVTable(
     var name: String?,
     var gender: String?,
     var age: Int?,
-    var sensorValue: Int?,
-    var prickValue: Int?,
+    var sensorValue: Float?,
+    var prickValue: Float?,
     var timestamp: String?,
 ) {
 

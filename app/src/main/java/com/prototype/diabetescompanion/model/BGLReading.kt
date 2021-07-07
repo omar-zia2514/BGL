@@ -21,10 +21,10 @@ class BGLReading(
     var Timestamp: String,
 
     @ColumnInfo(name = "prickValue")
-    var PrickValue: Int,
+    var PrickValue: Float,
 
     @ColumnInfo(name = "sensorValue")
-    var SensorValue: Int,
+    var SensorValue: Float,
 
     @ColumnInfo(name = "syncStatus")
     var SyncStatus: Int = 0,

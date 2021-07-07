@@ -22,6 +22,7 @@ import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.adapter.PatientAdapter
 import com.prototype.diabetescompanion.databinding.ActivityPatientsListBinding
 import com.prototype.diabetescompanion.interfaces.AdapterToActivity
+import com.prototype.diabetescompanion.model.BGLReading
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
 
@@ -203,5 +204,9 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
 
     override fun onUpdate(patient: PatientModel) {
         diabetesViewModel.updatePatient(context, patient)
+    }
+
+    override fun onLongPress(reading: BGLReading) {
+        TODO("Not yet implemented")
     }
 }

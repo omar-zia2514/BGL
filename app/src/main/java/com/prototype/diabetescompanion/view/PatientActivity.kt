@@ -4,10 +4,13 @@ import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -18,17 +21,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.DefaultRetryPolicy
 import com.android.volley.toolbox.JsonObjectRequest
-import com.jjoe64.graphview.GraphView
-import com.jjoe64.graphview.LegendRenderer
-import com.jjoe64.graphview.series.DataPoint
-import com.jjoe64.graphview.series.LineGraphSeries
 import com.prototype.diabetescompanion.*
 import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
 import com.prototype.diabetescompanion.databinding.ActivityPatientBinding
+import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.BGLReading
+import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
 
-class PatientActivity : AppCompatActivity() {
+class PatientActivity : AppCompatActivity(), AdapterToActivity {
 
     private lateinit var binding: ActivityPatientBinding
     lateinit var context: Context
@@ -50,12 +51,15 @@ class PatientActivity : AppCompatActivity() {
 
         diabetesViewModel = ViewModelProvider(this).get(DiabetesViewModel::class.java)
 
+        val readingsAdapter = PatientReadingsAdapter(context)
+        binding.patientReadingsRecyclerview.adapter = readingsAdapter
+
         diabetesViewModel.getOwnerPatientIdLiveData(context).observe(this, {
             patientId = it
             diabetesViewModel.getAllReadingsLiveDataWithPatientId(context, patientId)
                 .observe(this, {
-                    val patientReadingsAdapter = PatientReadingsAdapter(it, context)
-                    binding.patientReadingsRecyclerview.adapter = patientReadingsAdapter
+                    (binding.patientReadingsRecyclerview.adapter as PatientReadingsAdapter).setAdapterData(
+                        it)
                     allReadingsList = it
                 })
         })
@@ -105,7 +109,8 @@ class PatientActivity : AppCompatActivity() {
                 pDialog.isIndeterminate = true
                 pDialog.setMessage("Sync in progress...")
                 pDialog.show()
-                syncPatientData()}
+                syncPatientData()
+            }
         }
         return super.onOptionsItemSelected(item)
     }
@@ -127,7 +132,7 @@ class PatientActivity : AppCompatActivity() {
                     // Process the json
                     try {
                         Util.makeLog("Response: $response")
-                    diabetesViewModel.updateSyncStatusPatient(context, patientId)
+                        diabetesViewModel.updateSyncStatusPatient(context, patientId)
                         diabetesViewModel.updateOnlineIdsPatientSync(context, patientData, response)
                         pDialog.dismiss()
                     } catch (e: Exception) {
@@ -177,7 +182,7 @@ class PatientActivity : AppCompatActivity() {
     }
 
     private fun initGraph() {
-        val series: LineGraphSeries<DataPoint> = LineGraphSeries()
+        /*val series: LineGraphSeries<DataPoint> = LineGraphSeries()
         series.apply {
             thickness = 4
             isDrawDataPoints = true
@@ -187,8 +192,8 @@ class PatientActivity : AppCompatActivity() {
         }
 
         var counter = 1
-        var maxY = 0
-        var minY = 400
+        var maxY = 0f
+        var minY = 400f
 
         var listOfPrickPoints = mutableListOf<DataPointWithTime>()
 
@@ -282,7 +287,7 @@ class PatientActivity : AppCompatActivity() {
 //        labelRenderer.setHorizontalLabelsAngle(90)
 
         graph.addSeries(series)
-        graph.addSeries(seriesSensor)
+        graph.addSeries(seriesSensor)*/
     }
 
     private fun initEditDialog(): AlertDialog {
@@ -297,8 +302,8 @@ class PatientActivity : AppCompatActivity() {
             diabetesViewModel.insertReading(context,
                 BGLReading(patientId,
                     timestampString,
-                    etxtPrickVal.text.toString().toInt(),
-                    etxtSensorVal.text.toString().toInt()))
+                    etxtPrickVal.text.toString().toFloat(),
+                    etxtSensorVal.text.toString().toFloat()))
 
             diabetesViewModel.updatePatientLastReading(context,
                 patientId,
@@ -311,5 +316,98 @@ class PatientActivity : AppCompatActivity() {
         builder.setNegativeButton("Cancel"
         ) { dialog, id -> }
         return builder.create()
+    }
+
+    private fun initEditDeletePatientDialog(context: Context, reading: BGLReading) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+        val v: View = LayoutInflater.from(context).inflate(R.layout.edit_delete_form, null)
+        var btnEdit = v.findViewById<View>(R.id.btn_edit) as Button
+        var btnDelete = v.findViewById<View>(R.id.btn_delete) as Button
+
+        builder.setView(v)
+        val dialog = builder.create()
+        dialog.show()
+
+        btnEdit.setOnClickListener {
+            initEditPatientDialog(context, reading)
+            dialog.dismiss()
+        }
+        btnDelete.setOnClickListener {
+            initDeleteConfirmationDialog(context, reading)
+            dialog.dismiss()
+        }
+    }
+
+    private fun initEditPatientDialog(context: Context, reading: BGLReading) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+        val v: View = LayoutInflater.from(context).inflate(R.layout.new_reading_form, null)
+        var txtHeader = v.findViewById<View>(R.id.txt_header) as TextView
+        txtHeader.text = "Edit BGL Reading"
+        var txtPrick = v.findViewById<View>(R.id.etxt_prick_value) as TextView
+        var txtSensor = v.findViewById<View>(R.id.etxt_sensor_value) as TextView
+
+        txtPrick.text = reading.PrickValue.toString()
+        txtSensor.text = reading.SensorValue.toString()
+
+        builder.setView(v)
+        builder.setPositiveButton("Update", null)
+        builder.setNeutralButton("Read BGL ", null)
+        builder.setNegativeButton("Cancel", null)
+        val dialog = builder.create()
+
+        dialog.setOnShowListener {
+            val button: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val buttonNeutral: Button = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+            button.setOnClickListener {
+                val etxtPrickValue = v.findViewById<View>(R.id.etxt_prick_value) as EditText
+                val etxtSensorValue = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
+
+                if (etxtPrickValue.text.toString().trim()
+                        .isEmpty() || etxtSensorValue.text.toString().trim().isEmpty()
+                ) {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                } else {
+                    val updatedReading = BGLReading(reading.PatientId,
+                        reading.Timestamp,
+                        etxtPrickValue.text.toString().trim().toFloat(),
+                        etxtSensorValue.text.toString().trim().toFloat(),
+                        0)
+                    updatedReading.Id = reading.Id
+                    diabetesViewModel.updateReading(context, updatedReading)
+                    dialog.dismiss()
+                }
+            }
+            buttonNeutral.setOnClickListener {
+//                checkLocationPermission()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun initDeleteConfirmationDialog(context: Context, reading: BGLReading) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+
+        builder.setMessage("Are you sure?")
+        builder.setPositiveButton("Yes") { _, _ ->
+            reading.Id?.let { diabetesViewModel.deleteReadingWithId(context, it) }
+        }
+        builder.setNegativeButton("No") { dialog, _ ->
+            dialog.dismiss()
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    override fun onDelete(id: Int?) {
+        if (id != null)
+            diabetesViewModel.deletePatientWithId(context, id)
+    }
+
+    override fun onUpdate(patient: PatientModel) {
+        diabetesViewModel.updatePatient(context, patient)
+    }
+
+    override fun onLongPress(reading: BGLReading) {
+        initEditDeletePatientDialog(context, reading)
     }
 }
