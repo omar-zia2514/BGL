@@ -93,6 +93,14 @@ class DiabetesViewModel : ViewModel() {
         DiabetesRepository.updatePatient(context, patient)
     }
 
+    fun deleteReadingWithId(context: Context, id: Int) {
+        DiabetesRepository.deleteReadingWithId(context, id)
+    }
+
+    fun updateReading(context: Context, reading: BGLReading) {
+        DiabetesRepository.updatePatient(context, reading)
+    }
+
     fun updateSyncStatusDoctor(context: Context, patientId: Int) {
         Util.makeLog("updateSyncStatusDoctor")
         if (patientId == -1)

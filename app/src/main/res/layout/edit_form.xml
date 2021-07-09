@@ -66,6 +66,4 @@
             android:text="Female"
             android:padding="6dp" />
     </RadioGroup>
-
-
 </LinearLayout>

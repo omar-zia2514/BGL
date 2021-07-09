@@ -15,7 +15,7 @@ class Util {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
     }*/
         fun getCurrentTimeStamp(): String {
-            val tmp = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm a").format(Date())
+            val tmp = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").format(Date())
             makeLog("Current timestamp when saving new wreading")
             return tmp
         }

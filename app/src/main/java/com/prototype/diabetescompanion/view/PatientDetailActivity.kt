@@ -1,6 +1,7 @@
 package com.prototype.diabetescompanion.view
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.content.*
 import android.content.pm.PackageManager
@@ -8,11 +9,13 @@ import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -23,23 +26,33 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jjoe64.graphview.GraphView
-import com.jjoe64.graphview.LegendRenderer
-import com.jjoe64.graphview.series.DataPoint
-import com.jjoe64.graphview.series.LineGraphSeries
-import com.prototype.diabetescompanion.DataPointWithTime
+import com.anychart.AnyChart
+import com.anychart.chart.common.dataentry.DataEntry
+import com.anychart.chart.common.dataentry.ValueDataEntry
+import com.anychart.chart.common.listener.Event
+import com.anychart.chart.common.listener.ListenersInterface
+import com.anychart.charts.Cartesian
+import com.anychart.core.cartesian.series.Line
+import com.anychart.core.cartesian.series.Marker
+import com.anychart.data.Mapping
+import com.anychart.data.Set
+import com.anychart.enums.*
+import com.anychart.graphics.vector.Stroke
 import com.prototype.diabetescompanion.R
 import com.prototype.diabetescompanion.Util
 import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
 import com.prototype.diabetescompanion.ble.*
 import com.prototype.diabetescompanion.databinding.ActivityPatientDetailBinding
+import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.BGLReading
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
+import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
-
-class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS", "DEPRECATED_IDENTITY_EQUALS")
+class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, AdapterToActivity {
     private var layoutManager: RecyclerView.LayoutManager? = null
 
     private lateinit var binding: ActivityPatientDetailBinding
@@ -55,6 +68,16 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
     private val REQUEST_ENABLE_BT = 1000
     private val TAG = "diabetesDebug"
     private lateinit var etxtSensorVal: EditText
+
+    lateinit var cartesian: Cartesian
+    lateinit var seriesError: Line
+    lateinit var seriesPrick: Line
+    lateinit var seriesSensor: Line
+    lateinit var markerPrick: Marker
+    lateinit var markerSensor: Marker
+    lateinit var weeklyReadings: List<BGLReading>
+    lateinit var monthlyReadings: List<BGLReading>
+    lateinit var yearlyReadings: List<BGLReading>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,9 +118,13 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
                 }
             }
         })
+
+        val readingsAdapter = PatientReadingsAdapter(context)
+        binding.patientReadingsRecyclerview.adapter = readingsAdapter
+
         diabetesViewModel.getAllReadingsLiveDataWithPatientId(context, patientId).observe(this, {
-            val patientReadingsAdapter = PatientReadingsAdapter(it, context)
-            binding.patientReadingsRecyclerview.adapter = patientReadingsAdapter
+            (binding.patientReadingsRecyclerview.adapter as PatientReadingsAdapter).setAdapterData(
+                it)
             allReadingsList = it
         })
 
@@ -108,6 +135,25 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
         binding.patientReadingsRecyclerview.addItemDecoration(DividerItemDecoration(binding.patientReadingsRecyclerview.context,
             DividerItemDecoration.VERTICAL))
         binding.extendedFab.setOnClickListener { initEditDialog() }
+
+        setButtonBackgrounds(0)
+
+        binding.btnToday.setOnClickListener {
+            setButtonBackgrounds(1)
+            rePlotGraph(1, Util.getCurrentTimeStamp())
+        }
+        binding.btnWeek.setOnClickListener {
+            setButtonBackgrounds(2)
+            rePlotGraph(2, Util.getCurrentTimeStamp())
+        }
+        binding.btnMonth.setOnClickListener {
+            setButtonBackgrounds(3)
+            rePlotGraph(3, Util.getCurrentTimeStamp())
+        }
+        binding.btnYear.setOnClickListener {
+            setButtonBackgrounds(4)
+            rePlotGraph(4, Util.getCurrentTimeStamp())
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -126,13 +172,13 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
             if (currentMode == 0) {
                 /*val drawable = ContextCompat.getDrawable(applicationContext, R.drawable.change_pass)
                 supportActionBar.setOverflowIcon(drawable)*/
-                item.icon = getResources().getDrawable(R.drawable.list_mode)
+                item.icon = resources.getDrawable(R.drawable.list_mode)
                 item.title = "LIST"
                 currentMode = 1
                 switchToGraphView()
-                initGraph()
+                plotGraph()
             } else {
-                item.icon = getResources().getDrawable(R.drawable.graph_mode)
+                item.icon = resources.getDrawable(R.drawable.graph_mode)
                 item.title = "GRAPH"
                 currentMode = 0
                 switchToListView()
@@ -152,127 +198,805 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
 
     private fun switchToGraphView() {
         binding.listGroup.visibility = View.GONE
-        binding.graph.visibility = View.VISIBLE
+        binding.graphGroup.visibility = View.VISIBLE
     }
 
     private fun switchToListView() {
         binding.listGroup.visibility = View.VISIBLE
-        binding.graph.visibility = View.GONE
+        binding.graphGroup.visibility = View.GONE
     }
 
-    private fun initGraph() {
-        val series: LineGraphSeries<DataPoint> = LineGraphSeries()
-        series.apply {
-            thickness = 4
-            isDrawDataPoints = true
-            dataPointsRadius = 7.toFloat()
-            color = getColor(R.color.app_green)
-            title = "Prick Values"
-            isDrawBackground = true
-            backgroundColor = getColor(R.color.app_grey)
+    private fun getXAxis(dateString: String, graphTimeline: Int): String {
+        val date = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(dateString)
+        val cal = Calendar.getInstance()
+        cal.time = date
+
+        when (graphTimeline) {
+            1 -> {
+                val hours = if (cal[Calendar.HOUR] == 0) 12 else cal[Calendar.HOUR]
+                val mins =
+                    if (cal[Calendar.MINUTE] < 10) "0" + cal[Calendar.MINUTE] else cal[Calendar.MINUTE]
+                val secs = cal[Calendar.SECOND]
+                val ammp = cal[Calendar.AM_PM]
+                val ammpString: String = if (ammp == 0)
+                    "AM"
+                else
+                    "PM"
+
+                return "$hours:$mins:$secs $ammpString"
+            }
+            2 -> {
+                val day = cal[Calendar.DAY_OF_WEEK]
+                Util.makeLog("Day: $day")
+                return when (day) {
+                    1 -> "Sunday"
+                    2 -> "Monday"
+                    3 -> "Tuesday"
+                    4 -> "Wednesday"
+                    5 -> "Thursday"
+                    6 -> "Friday"
+                    7 -> "Saturday"
+                    else -> "Sunday"
+                }
+            }
+            3 -> {
+                val dayOfMonth = cal[Calendar.DAY_OF_MONTH]
+                val monthName = when (cal[Calendar.MONTH]) {
+                    0 -> "Jan"
+                    1 -> "Feb"
+                    2 -> "Mar"
+                    3 -> "Apr"
+                    4 -> "May"
+                    5 -> "Jun"
+                    6 -> "Jul"
+                    7 -> "Aug"
+                    8 -> "Sep"
+                    9 -> "Oct"
+                    10 -> "Nov"
+                    11 -> "Dec"
+                    else -> "Jan"
+                }
+                Util.makeLog("Day: $dayOfMonth")
+                return "$dayOfMonth $monthName"
+            }
+            4 -> {
+                val month = cal[Calendar.MONTH]
+                Util.makeLog("Day: $month")
+                return when (month) {
+                    0 -> "January"
+                    1 -> "February"
+                    2 -> "March"
+                    3 -> "April"
+                    4 -> "May"
+                    5 -> "June"
+                    6 -> "July"
+                    7 -> "August"
+                    8 -> "September"
+                    9 -> "October"
+                    10 -> "November"
+                    11 -> "December"
+                    else -> "January"
+                }
+            }
+            else -> {
+                val hours = if (cal[Calendar.HOUR] == 0) 12 else cal[Calendar.HOUR]
+                val mins =
+                    if (cal[Calendar.MINUTE] < 10) "0" + cal[Calendar.MINUTE] else cal[Calendar.MINUTE]
+                val secs = cal[Calendar.SECOND]
+                val ammp = cal[Calendar.AM_PM]
+                val ammpString: String = if (ammp == 0)
+                    "AM"
+                else
+                    "PM"
+
+                return "$hours:$mins:$secs $ammpString"
+            }
         }
+    }
 
-        var counter = 1
-        var maxY = 0
-        var minY = 400
+    private fun getXAxisMajorLabel(dateString: String, graphTimeline: Int): String {
+        val date = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(dateString)
+        val cal = Calendar.getInstance()
+        cal.time = date
 
-        var listOfPrickPoints = mutableListOf<DataPointWithTime>()
+        when (graphTimeline) {
+            1 -> {
+                val dayOfMonth = cal[Calendar.DAY_OF_MONTH]
+                val month: String = when (cal[Calendar.MONTH]) {
+                    0 -> "January"
+                    1 -> "February"
+                    2 -> "March"
+                    3 -> "April"
+                    4 -> "May"
+                    5 -> "June"
+                    6 -> "July"
+                    7 -> "August"
+                    8 -> "September"
+                    9 -> "October"
+                    10 -> "November"
+                    11 -> "December"
+                    else -> "January"
+                }
+                val year = cal[Calendar.YEAR]
+
+                return "$dayOfMonth $month, $year"
+            }
+            2 -> {
+                return when (cal[Calendar.MONTH]) {
+                    0 -> "January"
+                    1 -> "February"
+                    2 -> "March"
+                    3 -> "April"
+                    4 -> "May"
+                    5 -> "June"
+                    6 -> "July"
+                    7 -> "August"
+                    8 -> "September"
+                    9 -> "October"
+                    10 -> "November"
+                    11 -> "December"
+                    else -> "January"
+                }
+            }
+            3 -> {
+                val year = cal[Calendar.YEAR]
+                return "$year"
+            }
+            else -> {
+                val dayOfMonth = cal[Calendar.DAY_OF_MONTH]
+                val month: String = when (cal[Calendar.MONTH]) {
+                    0 -> "January"
+                    1 -> "February"
+                    2 -> "March"
+                    3 -> "April"
+                    4 -> "May"
+                    5 -> "June"
+                    6 -> "July"
+                    7 -> "August"
+                    8 -> "September"
+                    9 -> "October"
+                    10 -> "November"
+                    11 -> "December"
+                    else -> "January"
+                }
+                val year = cal[Calendar.YEAR]
+
+                return "$dayOfMonth $month, $year"
+            }
+        }
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    fun getTodaysReadings(): List<BGLReading> {
+        val todayReading = arrayListOf<BGLReading>()
+
+        val calToday = Calendar.getInstance()
+        calToday.time = Date()
+        val calReading = Calendar.getInstance()
 
         for (entry in allReadingsList.indices.reversed()) {
-            if (allReadingsList[entry].PrickValue > maxY)
-                maxY = allReadingsList[entry].PrickValue
-            if (allReadingsList[entry].PrickValue < minY)
-                minY = allReadingsList[entry].PrickValue
-            listOfPrickPoints.add(DataPointWithTime(counter.toDouble(),
-                allReadingsList[entry].PrickValue.toDouble()))
-            series.appendData(DataPoint(counter.toDouble(),
-                allReadingsList[entry].PrickValue.toDouble()),
-                true, allReadingsList.size)
+            calReading.time =
+                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(allReadingsList[entry].Timestamp)
+            if (calReading[Calendar.DAY_OF_YEAR] === calToday[Calendar.DAY_OF_YEAR] &&
+                calReading[Calendar.YEAR] === calToday[Calendar.YEAR]
+            ) {
+                todayReading.add(allReadingsList[entry])
+            }
+        }
+        Util.makeLog("Current timestamp when saving new reading: ${todayReading.size}")
+        return todayReading
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    fun getTodaysReadings(dayTimestamp: String): List<BGLReading> {
+        val todayReading = arrayListOf<BGLReading>()
+
+        val calToday = Calendar.getInstance()
+        calToday.time = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(dayTimestamp)
+
+        //Date()
+        val calReading = Calendar.getInstance()
+
+        for (entry in allReadingsList.indices.reversed()) {
+            calReading.time =
+                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(allReadingsList[entry].Timestamp)
+            if (calReading[Calendar.DAY_OF_YEAR] === calToday[Calendar.DAY_OF_YEAR] &&
+                calReading[Calendar.YEAR] === calToday[Calendar.YEAR]
+            ) {
+                todayReading.add(allReadingsList[entry])
+            }
+        }
+        Util.makeLog("Current timestamp when saving new reading: ${todayReading.size}")
+        return todayReading
+    }
+
+    private fun getReadingsFromWeekDay(weekday: String?): List<BGLReading> {
+        Util.makeLog("getReadingsFromWeekDay(): $weekday")
+        val specificDayReadings = arrayListOf<BGLReading>()
+        val calSpecificDay = Calendar.getInstance()
+//        calSpecificDay.time = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(weekday)
+
+        val calReading = Calendar.getInstance()
+        for (entry in weeklyReadings.indices) {
+//            calReading.time =
+//                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse()
+            if (getXAxis(weeklyReadings[entry].Timestamp, 2) == weekday
+            ) {
+                specificDayReadings.add(weeklyReadings[entry])
+            }
+        }
+        Util.makeLog("No of readings calculated from weekly to daily shift: ${specificDayReadings.size}")
+        return specificDayReadings
+    }
+
+    private fun getReadingsFromMonthDay(monthday: String?): List<BGLReading> {
+        Util.makeLog("getReadingsFromMonthDay(): $monthday")
+        val specificDayReadings = arrayListOf<BGLReading>()
+        val calSpecificDay = Calendar.getInstance()
+//        calSpecificDay.time = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(weekday)
+
+        val calReading = Calendar.getInstance()
+        for (entry in monthlyReadings.indices) {
+//            calReading.time =
+//                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse()
+            if (getXAxis(monthlyReadings[entry].Timestamp, 3) == monthday
+            ) {
+                specificDayReadings.add(monthlyReadings[entry])
+            }
+        }
+        Util.makeLog("No of readings calculated from monthly to daily shift: ${specificDayReadings.size}")
+        return specificDayReadings
+    }
+
+    private fun getReadingsFromYearMonth(yearMonth: String?): List<BGLReading> {
+        Util.makeLog("getReadingsFromMonthDay(): $yearMonth")
+        val specificDayReadings = arrayListOf<BGLReading>()
+        val calSpecificDay = Calendar.getInstance()
+//        calSpecificDay.time = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(weekday)
+
+        val calReading = Calendar.getInstance()
+        for (entry in yearlyReadings.indices) {
+//            calReading.time =
+//                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse()
+            if (getXAxis(yearlyReadings[entry].Timestamp, 4) == yearMonth
+            ) {
+                specificDayReadings.add(yearlyReadings[entry])
+            }
+        }
+        Util.makeLog("No of readings calculated from monthly to daily shift: ${specificDayReadings.size}")
+        return specificDayReadings
+    }
+
+
+    @SuppressLint("SimpleDateFormat")
+    fun getWeeksReadings(): List<BGLReading> {
+        val todayReading = arrayListOf<BGLReading>()
+
+        val calToday = Calendar.getInstance()
+        calToday.time = Date()
+//            SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse("Sat, May 29, '21 at 2:51:11 AM")
+        val calReading = Calendar.getInstance()
+
+        for (entry in allReadingsList.indices.reversed()) {
+            calReading.time =
+                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(allReadingsList[entry].Timestamp)
+            if (calReading[Calendar.WEEK_OF_YEAR] === calToday[Calendar.WEEK_OF_YEAR] &&
+                calReading[Calendar.YEAR] === calToday[Calendar.YEAR]
+            ) {
+                todayReading.add(allReadingsList[entry])
+            }
+        }
+        Util.makeLog("Current timestamp when saving new reading: ${todayReading.size}")
+        return todayReading
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    fun getMonthsReadings(): List<BGLReading> {
+        val todayReading = arrayListOf<BGLReading>()
+
+        val calToday = Calendar.getInstance()
+        calToday.time = Date()
+//            SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse("Sat, May 29, '21 at 2:51:11 AM")
+        val calReading = Calendar.getInstance()
+
+        for (entry in allReadingsList.indices.reversed()) {
+            calReading.time =
+                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(allReadingsList[entry].Timestamp)
+            if (calReading[Calendar.MONTH] === calToday[Calendar.MONTH] &&
+                calReading[Calendar.YEAR] === calToday[Calendar.YEAR]
+            ) {
+                todayReading.add(allReadingsList[entry])
+            }
+        }
+        Util.makeLog("Current timestamp when saving new reading: ${todayReading.size}")
+        return todayReading
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    fun getYearsReadings(): List<BGLReading> {
+        val todayReading = arrayListOf<BGLReading>()
+
+        val calToday = Calendar.getInstance()
+        calToday.time = Date()
+        val calReading = Calendar.getInstance()
+
+        for (entry in allReadingsList.indices.reversed()) {
+            calReading.time =
+                SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a").parse(allReadingsList[entry].Timestamp)
+            if (calReading[Calendar.YEAR] === calToday[Calendar.YEAR]) {
+                todayReading.add(allReadingsList[entry])
+            }
+        }
+        Util.makeLog("Current timestamp when saving new reading: ${todayReading.size}")
+        return todayReading
+    }
+
+    private fun plotGraph() {
+        cartesian = setCartesianProperties(getXAxisMajorLabel(Util.getCurrentTimeStamp(), 1), true)
+
+        val listOfReadingsToPlot: List<BGLReading> = getTodaysReadings()
+
+        val seriesData: ArrayList<DataEntry> = ArrayList()
+        var counter = 1
+        for (entry in listOfReadingsToPlot.indices) {
+//            val sdf: SimpleDateFormat = SimpleDateFormat("EEE, MMM d, ''yy 'at' h:mm:ss a")
+//            val date = sdf.parse(listOfReadingsToPlot[entry].Timestamp)
+//            sdf.applyPattern("hh:mm:ss a MM-dd-yyyy")
+//            val formatedDate = sdf.format(date)
+//            Util.makeLog("Data: ${formatedDate}")
+            seriesData.add(CustomDataEntry(getXAxis(listOfReadingsToPlot[entry].Timestamp,
+                1),
+                listOfReadingsToPlot[entry].PrickValue,
+                listOfReadingsToPlot[entry].SensorValue,
+                listOfReadingsToPlot[entry].PrickValue - listOfReadingsToPlot[entry].SensorValue))
             counter++
         }
 
-        val seriesSensor: LineGraphSeries<DataPoint> = LineGraphSeries()
+        val set: Set = Set.instantiate()
+        set.data(seriesData)
+        val series1Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value' }")
+        val series2Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value2' }")
+        val series3Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value3' }")
+
+        seriesPrick = cartesian.line(series1Mapping)
+        seriesPrick.apply {
+            name("Prick Graph")
+            color("skyblue")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(10.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+                .format("Prick Value: {%value}")
+            setOnClickListener(object : ListenersInterface.OnClickListener(arrayOf("x",
+                "value")) {
+                override fun onClick(event: Event?) {
+                    Util.makeLog("EventPrick: " + event?.data.toString())
+                }
+            })
+        }
+
+        seriesSensor = cartesian.line(series2Mapping)
         seriesSensor.apply {
-            thickness = 4
-            isDrawDataPoints = true
-            dataPointsRadius = 7.toFloat()
-            color = getColor(R.color.red)
-            title = "Sensor Values"
-            isDrawBackground = true
-            backgroundColor = getColor(R.color.app_grey_light)
+            name("Sensor Graph")
+            color("steelblue")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(4.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+                .format("Sensor Value: {%value}")
         }
 
-        var counterSensor = 1
-        for (entry in allReadingsList.indices.reversed()) {
-            if (allReadingsList[entry].SensorValue > maxY)
-                maxY = allReadingsList[entry].SensorValue
-            if (allReadingsList[entry].SensorValue < minY)
-                minY = allReadingsList[entry].SensorValue
-            seriesSensor.appendData(DataPoint(counterSensor.toDouble(),
-                allReadingsList[entry].SensorValue.toDouble()),
-                true, allReadingsList.size)
-            counterSensor++
+        seriesError = cartesian.line(series3Mapping)
+        seriesError.apply {
+            name("Difference")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(4.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+            markers().type(MarkerType.DIAGONAL_CROSS)
         }
 
-        series.setOnDataPointTapListener { series1, dataPoint ->
-            var pointsCounter = 1
-            for (entry in allReadingsList.indices.reversed()) {
-                var point = DataPointWithTime(dataPoint.x, dataPoint.y)
-                var originalPoint = DataPointWithTime(pointsCounter.toDouble(),
-                    allReadingsList[entry].PrickValue.toDouble())
-                if (point == originalPoint)
-                    Toast.makeText(context,
-                        "${allReadingsList[entry].Timestamp} \nValue: ${dataPoint.y}",
-                        Toast.LENGTH_LONG).show()
-                pointsCounter++
+        markerPrick = cartesian.marker(series1Mapping)
+        markerPrick.apply {
+            size(4)
+            color("black")
+            type(MarkerType.CIRCLE)
+            legendItem().iconType(LegendItemIconType.BUBBLE)
+            name("Prick Points")
+            fill("function() {\n" +
+                    "    var threshold = this.iterator.get('value');\n" +
+                    "    if (threshold > 200)\n" +
+                    "      return 'crimson';\n" +
+                    "    else if (threshold < 200 && threshold > 140)\n" +
+                    "      return 'coral';\n" +
+                    "    return 'skyblue';\n" +
+                    "  }")
+            tooltip().enabled(false)
+        }
+
+        markerSensor = cartesian.marker(series2Mapping)
+        markerSensor.apply {
+            size(4)
+            color("black")
+            type(MarkerType.CIRCLE)
+            legendItem().iconType(LegendItemIconType.BUBBLE)
+            name("Sensor Points")
+            fill("function() {\n" +
+                    "    var threshold = this.iterator.get('value2');\n" +
+                    "    if (threshold > 200)\n" +
+                    "      return 'crimson';\n" +
+                    "    else if (threshold < 200 && threshold > 140)\n" +
+                    "      return 'coral';\n" +
+                    "    return 'steelblue';\n" +
+                    "  }")
+            tooltip().enabled(false)
+        }
+        binding.graph.setChart(cartesian)
+    }
+
+    private fun rePlotGraph(graphTimeline: Int, timestamp: String) {
+        val listOfReadingsToPlot: List<BGLReading>
+        when (graphTimeline) {
+            1 -> {
+                setCartesianProperties(getXAxisMajorLabel(timestamp, 1), false)
+                listOfReadingsToPlot = getTodaysReadings(timestamp)
             }
-        }
-
-        seriesSensor.setOnDataPointTapListener { series1, dataPoint ->
-            var sensorPointsCounter = 1
-            for (entry in allReadingsList.indices.reversed()) {
-                var point = DataPointWithTime(dataPoint.x, dataPoint.y)
-                var originalPoint = DataPointWithTime(sensorPointsCounter.toDouble(),
-                    allReadingsList[entry].SensorValue.toDouble())
-                if (point == originalPoint)
-                    Toast.makeText(context,
-                        "${allReadingsList[entry].Timestamp} \nValue: ${dataPoint.y}",
-                        Toast.LENGTH_LONG).show()
-                sensorPointsCounter++
+            2 -> {
+                setCartesianProperties("", false)
+                weeklyReadings = getWeeksReadings()
+                listOfReadingsToPlot = weeklyReadings
             }
+            3 -> {
+                setCartesianProperties(getXAxisMajorLabel(timestamp, 2), false)
+                monthlyReadings = getMonthsReadings()
+                listOfReadingsToPlot = monthlyReadings
+            }
+            4 -> {
+                setCartesianProperties(getXAxisMajorLabel(timestamp, 3), false)
+                yearlyReadings = getYearsReadings()
+                listOfReadingsToPlot = yearlyReadings
+            }
+            else -> listOfReadingsToPlot = getTodaysReadings()
         }
 
-        val graph = findViewById<View>(R.id.graph) as GraphView
-        graph.apply {
-            removeAllSeries()
-            title = "BGL Readings"
-            legendRenderer.isVisible = true
-            legendRenderer.align = LegendRenderer.LegendAlign.TOP
-            viewport.setMinX(1.toDouble())
-            viewport.setMaxX((allReadingsList.size).toDouble())
-            viewport.setMinY((minY - 20).toDouble())
-            viewport.setMaxY((maxY + 20).toDouble())
-            viewport.isYAxisBoundsManual = true
-            viewport.isXAxisBoundsManual = true
-            viewport.isScrollable = true
-            viewport.setScrollableY(true)
-            viewport.isScalable = true
-            viewport.setScalableY(true)
-            viewport.backgroundColor = getColor(R.color.design_default_color_secondary)
-            viewport.setDrawBorder(true)
-            viewport.borderColor = getColor(R.color.design_default_color_primary_variant)
+        val seriesData: ArrayList<DataEntry> = ArrayList()
+        var counter = 1
+        for (entry in listOfReadingsToPlot.indices) {
+            seriesData.add(CustomDataEntry(getXAxis(listOfReadingsToPlot[entry].Timestamp,
+                graphTimeline),
+                listOfReadingsToPlot[entry].PrickValue,
+                listOfReadingsToPlot[entry].SensorValue,
+                listOfReadingsToPlot[entry].PrickValue - listOfReadingsToPlot[entry].SensorValue))
+            counter++
         }
 
-        val labelRenderer = graph.gridLabelRenderer
-        labelRenderer.horizontalAxisTitle = "No of readings"
-        labelRenderer.verticalAxisTitle = "BGL Values"
-        labelRenderer.numVerticalLabels = 20
-        labelRenderer.numHorizontalLabels = allReadingsList.size
-        labelRenderer.padding = 50
-//        labelRenderer.setHorizontalLabelsAngle(90)
+        val set: Set = Set.instantiate()
+        set.data(seriesData)
+        val series1Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value' }")
+        val series2Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value2' }")
+        val series3Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value3' }")
 
-        graph.addSeries(series)
-        graph.addSeries(seriesSensor)
+        seriesPrick.apply {
+            data(series1Mapping)
+            name("Prick Graph")
+            color("skyblue")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(10.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+        }
+
+        if (graphTimeline != 1) {
+            seriesPrick.tooltip().format("Prick Value(Mean): {%value}")
+        } else
+            seriesPrick.tooltip().format("Prick Value: {%value}")
+
+        seriesSensor.apply {
+            data(series2Mapping)
+            name("Sensor Graph")
+            color("steelblue")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(4.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+        }
+
+        seriesError.apply {
+            data(series3Mapping)
+            name("Difference")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(4.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+            markers().type(MarkerType.DIAGONAL_CROSS)
+        }
+
+        markerPrick.apply {
+            data(series1Mapping)
+            size(4)
+            color("black")
+            type(MarkerType.CIRCLE)
+            legendItem().iconType(LegendItemIconType.BUBBLE)
+            name("Prick Points")
+            fill("function() {\n" +
+                    "    var threshold = this.iterator.get('value');\n" +
+                    "    if (threshold > 200)\n" +
+                    "      return 'crimson';\n" +
+                    "    else if (threshold < 200 && threshold > 140)\n" +
+                    "      return 'coral';\n" +
+                    "    return 'skyblue';\n" +
+                    "  }")
+        }
+
+        markerSensor.apply {
+            data(series2Mapping)
+            size(4)
+            color("black")
+            type(MarkerType.CIRCLE)
+            legendItem().iconType(LegendItemIconType.BUBBLE)
+            name("Sensor Points")
+            fill("function() {\n" +
+                    "    var threshold = this.iterator.get('value2');\n" +
+                    "    if (threshold > 200)\n" +
+                    "      return 'crimson';\n" +
+                    "    else if (threshold < 200 && threshold > 140)\n" +
+                    "      return 'coral';\n" +
+                    "    return 'steelblue';\n" +
+                    "  }")
+//            removeAllListeners()
+            setOnClickListener(object : ListenersInterface.OnClickListener(arrayOf("x",
+                "value")) {
+                override fun onClick(event: Event?) {
+                    Util.makeLog("Event: " + event?.data.toString())
+                    if (graphTimeline == 2) {
+                        setButtonBackgrounds(1)
+                        rePlotGraph(1, getReadingsFromWeekDay(event?.data?.get("x")))
+                    } else if (graphTimeline == 3) {
+                        setButtonBackgrounds(1)
+                        rePlotGraph(1, getReadingsFromMonthDay(event?.data?.get("x")))
+                    } else if (graphTimeline == 4) {
+                        setButtonBackgrounds(3)
+                        rePlotGraph(3, getReadingsFromYearMonth(event?.data?.get("x")))
+                    }
+                }
+            })
+
+        }
+    }
+
+    private fun rePlotGraph(graphTimeline: Int, listOfReadingsToPlot: List<BGLReading>) {
+        when (graphTimeline) {
+            1 -> setCartesianProperties(getXAxisMajorLabel(listOfReadingsToPlot[0].Timestamp, 1),
+                false)
+            3 -> setCartesianProperties(getXAxisMajorLabel(listOfReadingsToPlot[0].Timestamp, 2),
+                false)
+        }
+
+        val seriesData: ArrayList<DataEntry> = ArrayList()
+        var counter = 1
+        for (entry in listOfReadingsToPlot.indices) {
+            seriesData.add(CustomDataEntry(getXAxis(listOfReadingsToPlot[entry].Timestamp,
+                graphTimeline),
+                listOfReadingsToPlot[entry].PrickValue,
+                listOfReadingsToPlot[entry].SensorValue,
+                listOfReadingsToPlot[entry].PrickValue - listOfReadingsToPlot[entry].SensorValue))
+            counter++
+        }
+
+        val set: Set = Set.instantiate()
+        set.data(seriesData)
+        val series1Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value' }")
+        val series2Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value2' }")
+        val series3Mapping: Mapping =
+            set.mapAs("{ x: 'x', value: 'value3' }")
+
+        seriesPrick.apply {
+            data(series1Mapping)
+            name("Prick Graph")
+            color("skyblue")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(10.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+        }
+
+        if (graphTimeline != 1) {
+            seriesPrick.tooltip().format("Prick Value(Mean): {%value}")
+        } else
+            seriesPrick.tooltip().format("Prick Value: {%value}")
+
+        seriesSensor.apply {
+            data(series2Mapping)
+            name("Sensor Graph")
+            color("steelblue")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(4.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+        }
+
+        seriesError.apply {
+            data(series3Mapping)
+            name("Difference")
+            legendItem().iconType(LegendItemIconType.LINE)
+            hovered().markers().enabled(true)
+            hovered().markers()
+                .type(MarkerType.CIRCLE)
+                .size(4.0)
+            tooltip()
+                .position("right")
+                .anchor(Anchor.LEFT_CENTER)
+                .offsetX(0.0)
+                .offsetY(0.0)
+            markers().type(MarkerType.DIAGONAL_CROSS)
+        }
+
+        markerPrick.apply {
+            data(series1Mapping)
+            size(4)
+            color("black")
+            type(MarkerType.CIRCLE)
+            legendItem().iconType(LegendItemIconType.BUBBLE)
+            name("Prick Points")
+            fill("function() {\n" +
+                    "    var threshold = this.iterator.get('value');\n" +
+                    "    if (threshold > 200)\n" +
+                    "      return 'crimson';\n" +
+                    "    else if (threshold < 200 && threshold > 140)\n" +
+                    "      return 'coral';\n" +
+                    "    return 'skyblue';\n" +
+                    "  }")
+        }
+
+        markerSensor.apply {
+            data(series2Mapping)
+            size(4)
+            color("black")
+            type(MarkerType.CIRCLE)
+            legendItem().iconType(LegendItemIconType.BUBBLE)
+            name("Sensor Points")
+            fill("function() {\n" +
+                    "    var threshold = this.iterator.get('value2');\n" +
+                    "    if (threshold > 200)\n" +
+                    "      return 'crimson';\n" +
+                    "    else if (threshold < 200 && threshold > 140)\n" +
+                    "      return 'coral';\n" +
+                    "    return 'steelblue';\n" +
+                    "  }")
+            setOnClickListener(object : ListenersInterface.OnClickListener(arrayOf("x",
+                "value")) {
+                override fun onClick(event: Event?) {
+                    Util.makeLog("Event: " + event?.data.toString())
+                }
+            })
+
+        }
+    }
+
+    private fun setCartesianProperties(xAxisLabel: String, createNew: Boolean): Cartesian {
+        if (createNew)
+            cartesian = AnyChart.line()
+
+        cartesian.animation(true)
+        cartesian.padding(10.0, 10.0, 5.0, 10.0)
+        cartesian.crosshair().enabled(true)
+        cartesian.crosshair()
+            .yLabel(true) // TODO ystroke
+            .yStroke(null as Stroke?, null, null, null as String?, null as String?)
+        cartesian.tooltip().positionMode(TooltipPositionMode.POINT)
+        cartesian.title("Blood Glucose Data")
+        cartesian.yAxis(0).title("Value(mg/dL)")
+
+        if (xAxisLabel.isNotEmpty()) {
+            Util.makeLog("isNotEmpty")
+            cartesian.xAxis(0).title().enabled(true)
+            cartesian.xAxis(0).title(xAxisLabel)
+            cartesian.xAxis(0).title().fontSize(20)
+        } else {
+            Util.makeLog("isEmpty")
+            cartesian.xAxis(0).title().enabled(false)
+            cartesian.xAxis(0).title("")
+        }
+        cartesian.xAxis(0).labels().padding(5.0, 5.0, 20.0, 5.0)
+        cartesian.yGrid(0).enabled(true)
+//        cartesian.xGrid(0).enabled(true)
+
+        cartesian.yGrid(0).stroke("{ dash: \"3 5\", color: 'lightgray' }")
+
+//        cartesian.xScale(DateTime.instantiate())
+
+//        cartesian.xAxis(0).labels().wordWrap("break-word")
+//        cartesian.xAxis(0).labels().wordBreak("break-all")
+//        cartesian.xAxis(0).labels().width(70)
+//        cartesian.xAxis(0).labels()
+//            .format("{%value}{dateTimeFormat:hh:mm:ss a MM-dd-yyyy}")
+
+
+//        cartesian.xAxis(0).labels().format("function() {\n" +
+//                "  var value1 = this.value;\n" +
+//                "  // scale USD to EUR and rouns the result\n" +
+//                "  var value2 = Date.parse(value1);\n" +
+//                "  return value2;\n" +
+//                "}")
+
+
+/*        cartesian.xScroller(true)
+        cartesian.xZoom(true)*/
+        cartesian.legend().enabled(true)
+        cartesian.legend().fontSize(13.0)
+        cartesian.legend().padding(0.0, 0.0, 10.0, 10.0)
+        cartesian.legend().align(Align.CENTER)
+
+        return cartesian
+    }
+
+    private class CustomDataEntry(
+        x: String?,
+        value: Number?,
+        value2: Number?,
+        value3: Number?,
+    ) :
+        ValueDataEntry(x, value) {
+        init {
+            setValue("value2", value2)
+            setValue("value3", value3)
+        }
     }
 
     private fun initEditDialog() {
@@ -286,7 +1010,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
         builder.setNegativeButton("Cancel", null)
 
         val dialog = builder.create()
-        dialog.setOnShowListener(DialogInterface.OnShowListener {
+        dialog.setOnShowListener {
             val buttonPositive: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             val buttonNeutral: Button = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
             val buttonNegative: Button = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
@@ -305,8 +1029,8 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
                 diabetesViewModel.insertReading(context,
                     BGLReading(patientId,
                         timestampString,
-                        etxtPrickVal.text.toString().trim().toInt(),
-                        etxtSensorVal.text.toString().trim().toInt()))
+                        etxtPrickVal.text.toString().trim().toFloat(),
+                        etxtSensorVal.text.toString().trim().toFloat()))
 
                 diabetesViewModel.updatePatientLastReading(context,
                     patientId,
@@ -324,7 +1048,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
                 BLEConnectionManager.disconnect()
                 dialog.dismiss()
             }
-        })
+        }
         dialog.show()
     }
 
@@ -446,4 +1170,133 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener {
             }
         }
     }
+
+    private fun initEditDeletePatientDialog(context: Context, reading: BGLReading) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+        val v: View = LayoutInflater.from(context).inflate(R.layout.edit_delete_form, null)
+        var btnEdit = v.findViewById<View>(R.id.btn_edit) as Button
+        var btnDelete = v.findViewById<View>(R.id.btn_delete) as Button
+
+        builder.setView(v)
+        val dialog = builder.create()
+        dialog.show()
+
+        btnEdit.setOnClickListener {
+            initEditPatientDialog(context, reading)
+            dialog.dismiss()
+        }
+        btnDelete.setOnClickListener {
+            initDeleteConfirmationDialog(context, reading)
+            dialog.dismiss()
+        }
+    }
+
+    private fun initEditPatientDialog(context: Context, reading: BGLReading) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+        val v: View = LayoutInflater.from(context).inflate(R.layout.new_reading_form, null)
+        var txtHeader = v.findViewById<View>(R.id.txt_header) as TextView
+        txtHeader.text = "Edit BGL Reading"
+        var txtPrick = v.findViewById<View>(R.id.etxt_prick_value) as TextView
+        var txtSensor = v.findViewById<View>(R.id.etxt_sensor_value) as TextView
+
+        txtPrick.text = reading.PrickValue.toString()
+        txtSensor.text = reading.SensorValue.toString()
+
+        builder.setView(v)
+        builder.setPositiveButton("Update", null)
+        builder.setNeutralButton("Read BGL ", null)
+        builder.setNegativeButton("Cancel", null)
+        val dialog = builder.create()
+
+        dialog.setOnShowListener {
+            val button: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val buttonNeutral: Button = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+            button.setOnClickListener {
+                val etxtPrickValue = v.findViewById<View>(R.id.etxt_prick_value) as EditText
+                val etxtSensorValue = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
+
+                if (etxtPrickValue.text.toString().trim()
+                        .isEmpty() || etxtSensorValue.text.toString().trim().isEmpty()
+                ) {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                } else {
+                    val updatedReading = BGLReading(reading.PatientId,
+                        reading.Timestamp,
+                        etxtPrickValue.text.toString().trim().toFloat(),
+                        etxtSensorValue.text.toString().trim().toFloat(),
+                        0)
+                    updatedReading.Id = reading.Id
+                    diabetesViewModel.updateReading(context, updatedReading)
+                    dialog.dismiss()
+                }
+            }
+            buttonNeutral.setOnClickListener {
+                checkLocationPermission()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun initDeleteConfirmationDialog(context: Context, reading: BGLReading) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+
+        builder.setMessage("Are you sure?")
+        builder.setPositiveButton("Yes") { _, _ ->
+            reading.Id?.let { diabetesViewModel.deleteReadingWithId(context, it) }
+        }
+        builder.setNegativeButton("No") { dialog, _ ->
+            dialog.dismiss()
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    override fun onDelete(id: Int?) {
+        if (id != null)
+            diabetesViewModel.deletePatientWithId(context, id)
+    }
+
+    override fun onUpdate(patient: PatientModel) {
+        diabetesViewModel.updatePatient(context, patient)
+    }
+
+    override fun onLongPress(reading: BGLReading) {
+        initEditDeletePatientDialog(context, reading)
+    }
+
+    private fun setButtonBackgrounds(selected: Int) {
+        when (selected) {
+            1 -> {
+                binding.btnToday.setBackgroundColor(context.resources.getColor(R.color.app_green))
+                binding.btnWeek.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnMonth.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnYear.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+            }
+            2 -> {
+                binding.btnToday.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnWeek.setBackgroundColor(context.resources.getColor(R.color.app_green))
+                binding.btnMonth.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnYear.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+            }
+            3 -> {
+                binding.btnToday.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnWeek.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnMonth.setBackgroundColor(context.resources.getColor(R.color.app_green))
+                binding.btnYear.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+            }
+            4 -> {
+                binding.btnToday.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnWeek.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnMonth.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnYear.setBackgroundColor(context.resources.getColor(R.color.app_green))
+            }
+            else -> {
+                binding.btnToday.setBackgroundColor(context.resources.getColor(R.color.app_green))
+                binding.btnWeek.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnMonth.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+                binding.btnYear.setBackgroundColor(context.resources.getColor(R.color.app_grey_light))
+            }
+        }
+    }
+
 }

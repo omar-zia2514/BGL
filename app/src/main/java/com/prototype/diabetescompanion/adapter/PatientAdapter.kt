@@ -74,7 +74,6 @@ class PatientAdapter(var ctx: Context) :
             val v: View = LayoutInflater.from(view.context).inflate(R.layout.edit_form, null)
             var txtName = v.findViewById<View>(R.id.etxt_patient_name) as TextView
             var txtAge = v.findViewById<View>(R.id.etxt_patient_age) as TextView
-            var txtGender = v.findViewById<View>(R.id.etxt_patient_age) as TextView
             val radioGroup = v.findViewById<View>(R.id.main_radio_group) as RadioGroup
 
             txtName.text = dataSet[position].Name
@@ -118,20 +117,20 @@ class PatientAdapter(var ctx: Context) :
             }
             dialog.show()
         }
-    }
 
-    private fun initDeleteConfirmationDialog(context: Context, position: Int) {
-        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+        private fun initDeleteConfirmationDialog(context: Context, position: Int) {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
 
-        builder.setMessage("Are you sure?")
-        builder.setPositiveButton("Yes") { _, _ ->
-            (context as AdapterToActivity).onDelete(this@PatientAdapter.dataSet[position].Id)
+            builder.setMessage("Are you sure?")
+            builder.setPositiveButton("Yes") { _, _ ->
+                (context as AdapterToActivity).onDelete(this@PatientAdapter.dataSet[position].Id)
+            }
+            builder.setNegativeButton("No") { dialog, _ ->
+                dialog.dismiss()
+            }
+            val dialog = builder.create()
+            dialog.show()
         }
-        builder.setNegativeButton("No") { dialog, _ ->
-            dialog.dismiss()
-        }
-        val dialog = builder.create()
-        dialog.show()
     }
 
     fun setAdapterData(data: List<PatientModel>) {
@@ -179,8 +178,8 @@ class PatientAdapter(var ctx: Context) :
             dataSet[position].LastReading.also { bgl.text = it }
             dataSet[position].LastReadingTimestamp.also { bglTime.text = it }
 
-            if (dataSet[position].LastReading!!.split(" ")[0].toInt() >= 120 || dataSet[position].LastReading!!.split(
-                    " ")[0].toInt() <= 60
+            if (dataSet[position].LastReading!!.split(" ")[0].toFloat() >= 120 || dataSet[position].LastReading!!.split(
+                    " ")[0].toFloat() <= 60
             ) {
                 bglHeading.setTextColor(ctx.getColor(R.color.red))
                 bgl.setTextColor(ctx.getColor(R.color.red))
