@@ -26,6 +26,15 @@ class BGLReading(
     @ColumnInfo(name = "sensorValue")
     var SensorValue: Float,
 
+    @ColumnInfo(name = "temperature")
+    var Temperature: Float,
+
+    @ColumnInfo(name = "fingerWidth")
+    var FingerWidth: Float,
+
+    @ColumnInfo(name = "voltage")
+    var Voltage: Float,
+
     @ColumnInfo(name = "syncStatus")
     var SyncStatus: Int = 0,
 

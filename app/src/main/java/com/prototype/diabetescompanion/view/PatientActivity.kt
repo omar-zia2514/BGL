@@ -71,7 +71,7 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
         binding.patientReadingsRecyclerview.addItemDecoration(DividerItemDecoration(binding.patientReadingsRecyclerview.context,
             DividerItemDecoration.VERTICAL))
 
-        binding.extendedFab.setOnClickListener { initEditDialog().show() }
+        binding.extendedFab.setOnClickListener { initNewBGLReadingDialog().show() }
     }
 
     override fun onBackPressed() {
@@ -290,7 +290,7 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
         graph.addSeries(seriesSensor)*/
     }
 
-    private fun initEditDialog(): AlertDialog {
+    private fun initNewBGLReadingDialog(): AlertDialog {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         val v: View = layoutInflater.inflate(R.layout.new_reading_form, null)
         val etxtPrickVal = v.findViewById<View>(R.id.etxt_prick_value) as EditText
@@ -303,7 +303,7 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
                 BGLReading(patientId,
                     timestampString,
                     etxtPrickVal.text.toString().toFloat(),
-                    etxtSensorVal.text.toString().toFloat()))
+                    etxtSensorVal.text.toString().toFloat(), 0F, 0F, 0F, 0))
 
             diabetesViewModel.updatePatientLastReading(context,
                 patientId,
@@ -371,7 +371,7 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
                         reading.Timestamp,
                         etxtPrickValue.text.toString().trim().toFloat(),
                         etxtSensorValue.text.toString().trim().toFloat(),
-                        0)
+                        0F, 0F, 0F, 0)
                     updatedReading.Id = reading.Id
                     diabetesViewModel.updateReading(context, updatedReading)
                     dialog.dismiss()

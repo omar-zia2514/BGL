@@ -197,7 +197,7 @@ class BLEService : Service() {
             }
             Log.i(TAG,
                 "MESSAGE Response Array Normal===> " + dataValueNew + " UUID " + characteristic.uuid)
-            intent.putExtra(BLEConstants.EXTRA_DATA, dataValueNew)
+            intent.putExtra(BLEConstants.EXTRA_DATA, value)
             intent.putExtra(BLEConstants.EXTRA_UUID, characteristic.uuid.toString())
             sendBroadcast(intent)
         }

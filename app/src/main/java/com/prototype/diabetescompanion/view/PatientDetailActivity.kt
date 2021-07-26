@@ -78,6 +78,9 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
     lateinit var weeklyReadings: List<BGLReading>
     lateinit var monthlyReadings: List<BGLReading>
     lateinit var yearlyReadings: List<BGLReading>
+    var currentReadingTemperature: Float = 0F
+    var currentReadingFingerWidth: Float = 0F
+    var currentReadingVoltage: Float = 0F
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -1030,7 +1033,11 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                     BGLReading(patientId,
                         timestampString,
                         etxtPrickVal.text.toString().trim().toFloat(),
-                        etxtSensorVal.text.toString().trim().toFloat()))
+                        etxtSensorVal.text.toString().trim().toFloat(),
+                        currentReadingTemperature,
+                        currentReadingFingerWidth,
+                        currentReadingVoltage,
+                        0))
 
                 diabetesViewModel.updatePatientLastReading(context,
                     patientId,
@@ -1139,16 +1146,15 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
 
     private val mGattUpdateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val action = intent.action
-            when {
-                BLEConstants.ACTION_GATT_CONNECTED == action -> {
+            when (intent.action) {
+                BLEConstants.ACTION_GATT_CONNECTED -> {
                     Log.i(TAG, "ACTION_GATT_CONNECTED ")
-//                    BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
+                    BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
                 }
-                BLEConstants.ACTION_GATT_DISCONNECTED == action -> {
+                BLEConstants.ACTION_GATT_DISCONNECTED -> {
                     Log.i(TAG, "ACTION_GATT_DISCONNECTED ")
                 }
-                BLEConstants.ACTION_GATT_SERVICES_DISCOVERED == action -> {
+                BLEConstants.ACTION_GATT_SERVICES_DISCOVERED -> {
                     Log.i(TAG, "ACTION_GATT_SERVICES_DISCOVERED ")
                     try {
                         Thread.sleep(500)
@@ -1157,13 +1163,19 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                     }
                     BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
                 }
-                BLEConstants.ACTION_DATA_AVAILABLE == action -> {
-                    val data = intent.getStringExtra(BLEConstants.EXTRA_DATA)
+                BLEConstants.ACTION_DATA_AVAILABLE -> {
+                    val data = intent.getByteArrayExtra(BLEConstants.EXTRA_DATA)
                     val uuId = intent.getStringExtra(BLEConstants.EXTRA_UUID)
                     Log.i(TAG, "ACTION_DATA_AVAILABLE $data")
-                    etxtSensorVal.setText(data)
+                    try {
+                        etxtSensorVal.setText(Integer.parseInt(Util.byteArrayToHexString(data,
+                            false), 16).toString(10))
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Exception: ${e.message}")
+                        Log.e(TAG, "Exception: Val of data received: $data")
+                    }
                 }
-                BLEConstants.ACTION_DATA_WRITTEN == action -> {
+                BLEConstants.ACTION_DATA_WRITTEN -> {
                     val data = intent.getStringExtra(BLEConstants.EXTRA_DATA)
                     Log.i(TAG, "ACTION_DATA_WRITTEN ")
                 }
@@ -1171,7 +1183,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
         }
     }
 
-    private fun initEditDeletePatientDialog(context: Context, reading: BGLReading) {
+    private fun initEditDeleteBGLReadingDialog(context: Context, reading: BGLReading) {
         val builder: AlertDialog.Builder = AlertDialog.Builder(context)
         val v: View = LayoutInflater.from(context).inflate(R.layout.edit_delete_form, null)
         var btnEdit = v.findViewById<View>(R.id.btn_edit) as Button
@@ -1182,7 +1194,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
         dialog.show()
 
         btnEdit.setOnClickListener {
-            initEditPatientDialog(context, reading)
+            initEditBGLReadingDialog(context, reading)
             dialog.dismiss()
         }
         btnDelete.setOnClickListener {
@@ -1191,7 +1203,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
         }
     }
 
-    private fun initEditPatientDialog(context: Context, reading: BGLReading) {
+    private fun initEditBGLReadingDialog(context: Context, reading: BGLReading) {
         val builder: AlertDialog.Builder = AlertDialog.Builder(context)
         val v: View = LayoutInflater.from(context).inflate(R.layout.new_reading_form, null)
         var txtHeader = v.findViewById<View>(R.id.txt_header) as TextView
@@ -1213,17 +1225,20 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
             val buttonNeutral: Button = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
             button.setOnClickListener {
                 val etxtPrickValue = v.findViewById<View>(R.id.etxt_prick_value) as EditText
-                val etxtSensorValue = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
+                etxtSensorVal = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
 
                 if (etxtPrickValue.text.toString().trim()
-                        .isEmpty() || etxtSensorValue.text.toString().trim().isEmpty()
+                        .isEmpty() || etxtSensorVal.text.toString().trim().isEmpty()
                 ) {
                     Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 } else {
                     val updatedReading = BGLReading(reading.PatientId,
                         reading.Timestamp,
                         etxtPrickValue.text.toString().trim().toFloat(),
-                        etxtSensorValue.text.toString().trim().toFloat(),
+                        etxtSensorVal.text.toString().trim().toFloat(),
+                        currentReadingTemperature,
+                        currentReadingFingerWidth,
+                        currentReadingVoltage,
                         0)
                     updatedReading.Id = reading.Id
                     diabetesViewModel.updateReading(context, updatedReading)
@@ -1261,7 +1276,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
     }
 
     override fun onLongPress(reading: BGLReading) {
-        initEditDeletePatientDialog(context, reading)
+        initEditDeleteBGLReadingDialog(context, reading)
     }
 
     private fun setButtonBackgrounds(selected: Int) {
