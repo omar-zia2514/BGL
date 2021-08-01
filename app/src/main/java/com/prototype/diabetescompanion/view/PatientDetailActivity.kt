@@ -82,6 +82,16 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
     var currentReadingFingerWidth: Float = 0F
     var currentReadingVoltage: Float = 0F
 
+    private var state: Int = 0
+    private val ASent: Int = 1
+    private val AReceived: Int = 2
+    private val BSent: Int = 3
+    private val BReceived: Int = 4
+    private val CSent: Int = 5
+    private val CReceived: Int = 6
+    private val DSent: Int = 7
+    private val DReceived: Int = 8
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPatientDetailBinding.inflate(layoutInflater)
@@ -1166,10 +1176,9 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                 BLEConstants.ACTION_DATA_AVAILABLE -> {
                     val data = intent.getByteArrayExtra(BLEConstants.EXTRA_DATA)
                     val uuId = intent.getStringExtra(BLEConstants.EXTRA_UUID)
-                    Log.i(TAG, "ACTION_DATA_AVAILABLE $data")
                     try {
-                        etxtSensorVal.setText(Integer.parseInt(Util.byteArrayToHexString(data,
-                            false), 16).toString(10))
+                        etxtSensorVal.setText(Util.hexToAscii(Util.byteArrayToHexString(data,
+                            false)))
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception: ${e.message}")
                         Log.e(TAG, "Exception: Val of data received: $data")

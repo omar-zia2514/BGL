@@ -175,11 +175,9 @@ object BLEConnectionManager {
      * findBLEGattService
      */
     fun findBLEGattService(mContext: Context) {
-
         if (mBLEService == null) {
             return
         }
-
         if (mBLEService!!.getSupportedGattServices() == null) {
             return
         }
@@ -210,7 +208,7 @@ object BLEConnectionManager {
                             var newChar = gattCharacteristic
 //                            newChar = setProperties(newChar)
                             charBGL = newChar
-                            writeCharToStartReceivingBGLValues(byteArrayOf(0x42))
+                            writeCharToStartReceivingBGLValues(byteArrayOf(0x4E))
                             mBLEService?.setCharacteristicNotification(gattCharacteristic, true)
                             mHandler = Handler()
                             mHandler?.postDelayed(
