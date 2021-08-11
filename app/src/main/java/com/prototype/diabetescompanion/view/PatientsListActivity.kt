@@ -127,7 +127,7 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
                     pDialog.dismiss()
 
                     Toast.makeText(applicationContext,
-                        "error,$it",
+                        "An error occurred. Please try again.",
                         Toast.LENGTH_LONG)
                         .show()
                     // Toast.makeText(applicationContext, obj.getString("message"), Toast.LENGTH_LONG).show()

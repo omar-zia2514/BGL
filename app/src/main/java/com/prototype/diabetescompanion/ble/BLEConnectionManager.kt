@@ -21,15 +21,16 @@ object BLEConnectionManager {
 
     private val mServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(componentName: ComponentName, service: IBinder) {
-            Util.makeLog("onServiceConnected()")
+            Util.makeLog("onBLEServiceConnected()")
             mBLEService = (service as BLEService.LocalBinder).getService()
 
             if (!mBLEService?.initialize()!!) {
-                Log.e(TAG, "Unable to initialize")
+                Util.makeLog("Unable to initialize BLE Service")
             }
         }
 
         override fun onServiceDisconnected(componentName: ComponentName) {
+            Util.makeLog("onBLEServiceDISConnected()")
             mBLEService = null
         }
     }
@@ -71,7 +72,6 @@ object BLEConnectionManager {
         var result = false
         Util.makeLog("Going to connect to: $deviceAddress")
         if (mBLEService != null) {
-            Util.makeLog("mBLEService is not null")
             result = mBLEService!!.connect(deviceAddress)
         }
         Util.makeLog("Result of connect command: $result")
@@ -90,7 +90,7 @@ object BLEConnectionManager {
     }
 
     fun writeCharToStartReceivingBGLValues(value: ByteArray) {
-        Util.makeLog("writeCharToStartReceivingBGLValues()")
+        Util.makeLog("writeCharToStartReceivingBGLValues(): ${Util.byteArrayToHexString(value, false)}")
         if (charBGL != null) {
             charBGL!!.value = value
             writeBLECharacteristic(charBGL)
@@ -208,11 +208,11 @@ object BLEConnectionManager {
                             var newChar = gattCharacteristic
 //                            newChar = setProperties(newChar)
                             charBGL = newChar
-                            writeCharToStartReceivingBGLValues(byteArrayOf(0x4E))
-                            mBLEService?.setCharacteristicNotification(gattCharacteristic, true)
-                            mHandler = Handler()
-                            mHandler?.postDelayed(
-                                readRun, 2000) // Delay Period
+                            writeCharToStartReceivingBGLValues(byteArrayOf(0x45)) //TODO change it to 45 //deviceId
+                             mBLEService?.setCharacteristicNotification(gattCharacteristic, true)
+//                            mHandler = Handler() //no read for read as notification brings the updated value
+//                            mHandler?.postDelayed(
+//                                readRun, 2000) // Delay Period
                         }
                     }
                 }

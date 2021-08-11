@@ -1,9 +1,16 @@
 package com.prototype.diabetescompanion.view
 
+import android.Manifest
 import android.app.ProgressDialog
+import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -14,6 +21,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -23,22 +32,50 @@ import com.android.volley.DefaultRetryPolicy
 import com.android.volley.toolbox.JsonObjectRequest
 import com.prototype.diabetescompanion.*
 import com.prototype.diabetescompanion.adapter.PatientReadingsAdapter
+import com.prototype.diabetescompanion.ble.*
 import com.prototype.diabetescompanion.databinding.ActivityPatientBinding
 import com.prototype.diabetescompanion.interfaces.AdapterToActivity
 import com.prototype.diabetescompanion.model.BGLReading
 import com.prototype.diabetescompanion.model.PatientModel
 import com.prototype.diabetescompanion.viewmodel.DiabetesViewModel
 
-class PatientActivity : AppCompatActivity(), AdapterToActivity {
+class PatientActivity : AppCompatActivity(), OnDeviceScanListener, AdapterToActivity {
 
     private lateinit var binding: ActivityPatientBinding
-    lateinit var context: Context
+
+    private lateinit var context: Context
     lateinit var diabetesViewModel: DiabetesViewModel
-    private var patientId = 0
-    private var layoutManager: RecyclerView.LayoutManager? = null
+    private var patientId: Int = 0
+    private lateinit var _patient: PatientModel
     private lateinit var allReadingsList: List<BGLReading>
     private var currentMode = 0
+    private var mDeviceAddress: String = ""
+    private var cardDownloadProgress: ProgressDialog? = null
+
+    private var layoutManager: RecyclerView.LayoutManager? = null
     lateinit var pDialog: ProgressDialog
+    private lateinit var etxtSensorVal: EditText
+
+    private val REQUEST_LOCATION_PERMISSION = 2018
+    private val REQUEST_ENABLE_BT = 1000
+    private val TAG = "diabetesDebug"
+
+    var currentReadingTemperature: Float = 0F
+    var currentReadingFingerWidth: Float = 0F
+    var currentReadingVoltage: Float = 0F
+    var currentReadingDeviceId: Float = 0F
+
+    private var state: Int = 0
+    private val ASent: Int = 1
+    private val AReceived: Int = 2
+    private val BSent: Int = 3
+    private val BReceived: Int = 4
+    private val CSent: Int = 5
+    private val CReceived: Int = 6
+    private val DSent: Int = 7
+    private val DReceived: Int = 8
+    private val ESent: Int = 9
+    private val EReceived: Int = 10
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,7 +108,7 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
         binding.patientReadingsRecyclerview.addItemDecoration(DividerItemDecoration(binding.patientReadingsRecyclerview.context,
             DividerItemDecoration.VERTICAL))
 
-        binding.extendedFab.setOnClickListener { initNewBGLReadingDialog().show() }
+        binding.extendedFab.setOnClickListener { initNewBGLReadingDialog()}
     }
 
     override fun onBackPressed() {
@@ -169,6 +206,15 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
 
         // Add the volley post request to the request queue
         VolleySingleton.getInstance(this).addToRequestQueue(request)
+    }
+
+    override fun onScanCompleted(bglDevice: BGLSensorDevice) {
+        Util.makeLog("onScanCompleted(): Going to connect now ")
+        //Initiate a dialog Fragment from here and ask the user to select his device
+        // If the application already know the Mac address, we can simply call connect device
+
+        mDeviceAddress = bglDevice.mDeviceAddress
+        BLEConnectionManager.connect(bglDevice.mDeviceAddress)
     }
 
     private fun switchToGraphView() {
@@ -290,33 +336,62 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
         graph.addSeries(seriesSensor)*/
     }
 
-    private fun initNewBGLReadingDialog(): AlertDialog {
+    private fun initNewBGLReadingDialog() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         val v: View = layoutInflater.inflate(R.layout.new_reading_form, null)
         val etxtPrickVal = v.findViewById<View>(R.id.etxt_prick_value) as EditText
-        val etxtSensorVal = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
+        etxtSensorVal = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
         builder.setView(v)
-        builder.setPositiveButton("Save") { dialog, id ->
-            val timestampString = Util.getCurrentTimeStamp()
-            val valuesString = etxtPrickVal.text.toString() + " - " + etxtSensorVal.text.toString()
-            diabetesViewModel.insertReading(context,
-                BGLReading(patientId,
-                    timestampString,
-                    etxtPrickVal.text.toString().toFloat(),
-                    etxtSensorVal.text.toString().toFloat(), 0F, 0F, 0F, 0))
+        builder.setPositiveButton("Save", null)
+        builder.setNeutralButton("Read BGL ", null)
+        builder.setNegativeButton("Cancel", null)
 
-            diabetesViewModel.updatePatientLastReading(context,
-                patientId,
-                valuesString,
-                timestampString)
+        val dialog = builder.create()
+        dialog.setOnShowListener {
+            val buttonPositive: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val buttonNeutral: Button = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+            val buttonNegative: Button = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+            buttonPositive.setOnClickListener {
+                if (etxtPrickVal.text.toString().isEmpty() || etxtSensorVal.text.toString()
+                        .isEmpty()
+                ) {
+                    Toast.makeText(context, "Please fill the values", Toast.LENGTH_SHORT).show()
+//                    BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x44))
+                    return@setOnClickListener
+                }
+                val timestampString = Util.getCurrentTimeStamp()
+                val valuesString =
+                    etxtPrickVal.text.toString() + " - " + etxtSensorVal.text.toString()
+                diabetesViewModel.insertReading(context,
+                    BGLReading(patientId,
+                        timestampString,
+                        etxtPrickVal.text.toString().trim().toFloat(),
+                        etxtSensorVal.text.toString().trim().toFloat(),
+                        currentReadingTemperature,
+                        currentReadingFingerWidth,
+                        currentReadingVoltage,
+                        currentReadingDeviceId,
+                        0))
+
+                diabetesViewModel.updatePatientLastReading(context,
+                    patientId,
+                    valuesString,
+                    timestampString)
+                BLEConnectionManager.disconnect()
+                dialog.dismiss()
+            }
+            buttonNeutral.setOnClickListener {
+                checkLocationPermission()
+            }
+            buttonNegative.setOnClickListener {
+                BLEConnectionManager.disconnect()
+                dialog.dismiss()
+            }
         }
-        builder.setNeutralButton("Read BGL ") { dialog, id ->
-            Toast.makeText(context, "Not implemented yet", Toast.LENGTH_SHORT).show()
-        }
-        builder.setNegativeButton("Cancel"
-        ) { dialog, id -> }
-        return builder.create()
+        dialog.show()
     }
+
 
     private fun initEditDeletePatientDialog(context: Context, reading: BGLReading) {
         val builder: AlertDialog.Builder = AlertDialog.Builder(context)
@@ -371,7 +446,7 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
                         reading.Timestamp,
                         etxtPrickValue.text.toString().trim().toFloat(),
                         etxtSensorValue.text.toString().trim().toFloat(),
-                        0F, 0F, 0F, 0)
+                        0F, 0F, 0F, 0f, 0)
                     updatedReading.Id = reading.Id
                     diabetesViewModel.updateReading(context, updatedReading)
                     dialog.dismiss()
@@ -409,5 +484,186 @@ class PatientActivity : AppCompatActivity(), AdapterToActivity {
 
     override fun onLongPress(reading: BGLReading) {
         initEditDeletePatientDialog(context, reading)
+    }
+
+    private fun checkLocationPermission() {
+        when {
+            isLocationPermissionEnabled() -> initBLEModule()
+            ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) -> displayRationale()
+            else -> requestLocationPermission()
+        }
+    }
+
+    private fun isLocationPermissionEnabled(): Boolean {
+        return ContextCompat.checkSelfPermission(this,
+            Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestLocationPermission() {
+        ActivityCompat.requestPermissions(this,
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            REQUEST_LOCATION_PERMISSION)
+    }
+
+    private fun displayRationale() {
+        android.app.AlertDialog.Builder(this)
+            .setMessage(getString(R.string.location_permission_disabled))
+            .setPositiveButton(getString(R.string.ok)
+            ) { _, _ -> requestLocationPermission() }
+            .setNegativeButton(getString(R.string.cancel)
+            ) { _, _ -> }
+            .show()
+    }
+
+    private fun initBLEModule() {
+        // BLE initialization
+        if (!BLEScanManager.init(this)) {
+            Toast.makeText(this, "BLE NOT SUPPORTED", Toast.LENGTH_SHORT).show()
+            return
+        }
+        registerServiceReceiver()
+        BLEScanManager.setListener(this)
+
+        if (!BLEScanManager.isEnabled()) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+            Util.makeLog("Starting enable ble request")
+        } else {
+            Util.makeLog("initING BLE service")
+            BLEConnectionManager.initBLEService(this@PatientActivity)
+            scanDevice(false)
+        }
+    }
+
+    private fun scanDevice(isContinuesScan: Boolean) = if (mDeviceAddress.isNotEmpty()) {
+        connectDevice()
+    } else {
+        BLEScanManager.scanBLEDevice(isContinuesScan)
+    }
+
+    private fun connectDevice() {
+        Handler().postDelayed({
+//            BLEConnectionManager.initBLEService(this@PatientDetailActivity) //No need to call here as already called in initBLEModule
+            if (BLEConnectionManager.connect(mDeviceAddress)) {
+                Util.makeLog("DEVICE CONNECTED")
+            } else {
+                Util.makeLog("DEVICE COULD NOT CONNECT")
+                Toast.makeText(this@PatientActivity,
+                    "Device could not connect. Please retry.",
+                    Toast.LENGTH_SHORT).show()
+            }
+        }, 100)
+    }
+
+    private fun registerServiceReceiver() {
+        this.registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter())
+    }
+
+    private fun makeGattUpdateIntentFilter(): IntentFilter {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(BLEConstants.ACTION_GATT_CONNECTED)
+        intentFilter.addAction(BLEConstants.ACTION_GATT_DISCONNECTED)
+        intentFilter.addAction(BLEConstants.ACTION_GATT_SERVICES_DISCOVERED)
+        intentFilter.addAction(BLEConstants.ACTION_DATA_AVAILABLE)
+        intentFilter.addAction(BLEConstants.ACTION_DATA_WRITTEN)
+
+        return intentFilter
+    }
+
+    private val mGattUpdateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                BLEConstants.ACTION_GATT_CONNECTED -> {
+                    Log.i(TAG, "ACTION_GATT_CONNECTED ")
+//                    BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
+                }
+                BLEConstants.ACTION_GATT_DISCONNECTED -> {
+                    Log.i(TAG, "ACTION_GATT_DISCONNECTED ")
+                }
+                BLEConstants.ACTION_GATT_SERVICES_DISCOVERED -> {
+                    Log.i(TAG, "ACTION_GATT_SERVICES_DISCOVERED ")
+                    try {
+                        Thread.sleep(500)
+                    } catch (e: InterruptedException) {
+                        e.printStackTrace()
+                    }
+                    showProgressLoader()
+                    state = ESent
+                    BLEConnectionManager.findBLEGattService(this@PatientActivity)
+//                    BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x4E))
+                }
+                BLEConstants.ACTION_DATA_AVAILABLE -> {
+                    val data = intent.getByteArrayExtra(BLEConstants.EXTRA_DATA)
+                    when (state) {
+                        ESent -> {
+                            state = EReceived
+                            currentReadingDeviceId =
+                                Util.hexToAscii(Util.byteArrayToHexString(data,
+                                    false)).toFloat()
+                            state = BSent
+                            BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x41)) //body temp
+                        }
+                        BSent -> {
+                            state = BReceived
+                            currentReadingTemperature =
+                                Util.hexToAscii(Util.byteArrayToHexString(data,
+                                    false)).toFloat()
+                            state = CSent
+                            BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x43)) //finger width
+                        }
+                        CSent -> {
+                            state = CReceived
+                            currentReadingFingerWidth =
+                                Util.hexToAscii(Util.byteArrayToHexString(data,
+                                    false)).toFloat()
+                            state = DSent
+                            BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x44)) //voltage
+                        }
+                        DSent -> {
+                            state = DReceived
+                            currentReadingVoltage =
+                                Util.hexToAscii(Util.byteArrayToHexString(data,
+                                    false)).toFloat()
+                            state = ASent
+                            BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x4E)) //BGL
+                        }
+                        ASent -> {
+                            state = AReceived
+                            etxtSensorVal.setText(Util.hexToAscii(Util.byteArrayToHexString(data,
+                                false)))
+                            Util.makeLog("Temp: $currentReadingTemperature")
+                            Util.makeLog("Finger: $currentReadingFingerWidth")
+                            Util.makeLog("Voltage: $currentReadingVoltage")
+                            Util.makeLog("DeviceId: $currentReadingDeviceId")
+                            Util.makeLog("BGL: ${etxtSensorVal.text.toString()}")
+
+                            BLEConnectionManager.disconnect()
+                            dismissProgressLoader()
+                        }
+                    }
+                }
+                BLEConstants.ACTION_DATA_WRITTEN -> {
+                    val data = intent.getByteArrayExtra(BLEConstants.EXTRA_DATA)
+                    Log.i(TAG, "ACTION_DATA_WRITTEN ")
+                }
+            }
+        }
+    }
+
+    private fun showProgressLoader() {
+        if (!isFinishing) {
+            cardDownloadProgress = ProgressDialog(this@PatientActivity)
+            cardDownloadProgress!!.setMessage("Getting BGL data...")
+            cardDownloadProgress!!.setIndeterminate(true)
+            cardDownloadProgress!!.setProgressStyle(ProgressDialog.STYLE_SPINNER)
+            cardDownloadProgress!!.setCancelable(false)
+            cardDownloadProgress!!.setCanceledOnTouchOutside(false);
+            cardDownloadProgress!!.show()
+        }
+    }
+
+    private fun dismissProgressLoader() {
+        if (cardDownloadProgress != null) cardDownloadProgress!!.dismiss()
     }
 }

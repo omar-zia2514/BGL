@@ -33,12 +33,12 @@ class BLEService : Service() {
         ) {//Change in connection state
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {//See if we are connected
-                Log.i(TAG, "**ACTION_SERVICE_CONNECTED**$status")
+                Log.i(TAG, "**BLEGATT.......ACTION_GATT_CONNECTED**$status")
                 broadcastUpdate(BLEConstants.ACTION_GATT_CONNECTED)//Go broadcast an intent to say we are connected
 //                gatt.discoverServices()
                 mBluetoothGatt?.discoverServices()//Discover services on connected BLE device
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {//See if we are not connected
-                Log.i(TAG, "**ACTION_SERVICE_DISCONNECTED**$status");
+                Log.i(TAG, "**BLEGATT.......ACTION_GATT_DISCONNECTED**$status");
                 broadcastUpdate(BLEConstants.ACTION_GATT_DISCONNECTED)//Go broadcast an intent to say we are disconnected
             }
         }
@@ -47,12 +47,12 @@ class BLEService : Service() {
             gatt: BluetoothGatt,
             status: Int,
         ) {              //BLE service discovery complete
-            Util.makeLog("onCharacteristicRead()")
+            Util.makeLog("onServicesDiscovered()")
             if (status == BluetoothGatt.GATT_SUCCESS) {                                 //See if the service discovery was successful
-                Log.i(TAG, "**ACTION_SERVICE_DISCOVERED**$status")
+                Log.i(TAG, "**BLEGATT.......ACTION_SERVICE_DISCOVERED**$status")
                 broadcastUpdate(BLEConstants.ACTION_GATT_SERVICES_DISCOVERED)                       //Go broadcast an intent to say we have discovered services
             } else {                                                                      //Service discovery failed so log a warning
-                Log.i(TAG, "onServicesDiscovered received: $status")
+                Log.i(TAG, "BLEGATT.......onServicesDiscovered ERROR: $status")
             }
         }
 
@@ -70,10 +70,9 @@ class BLEService : Service() {
             var value = 0
 
             if (null != values) {
-                Log.i(TAG, "ACTION_DATA_READ VALUE: size of read array " + values.size)
-                Log.i(TAG, "ACTION_DATA_READ VALUE: " + (values[0].toInt()))
-
-                Log.i(TAG, "ACTION_DATA_READ VALUE: ORIG " + (values[0] and 0xFF.toByte()))
+                Log.i(TAG, "BLEGATT.......size of read array " + values.size)
+                Log.i(TAG, "BLEGATT.......toInt" + (values[0].toInt()))
+                Log.i(TAG, "BLEGATT.......ORIG" + (values[0] and 0xFF.toByte()))
 
                 value = (values[0] and 0xFF.toByte()).toInt()
             }
@@ -82,11 +81,11 @@ class BLEService : Service() {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 //See if the read was successful
-                Log.i(TAG, "**ACTION_DATA_READ**$characteristic")
-                broadcastUpdate(BLEConstants.ACTION_DATA_AVAILABLE,
-                    characteristic)                 //Go broadcast an intent with the characteristic data
+                Log.i(TAG, "BLEGATT.......ACTION_DATA_READ: Successful")
+//                broadcastUpdate(BLEConstants.ACTION_DATA_AVAILABLE,
+//                    characteristic)                 //Go broadcast an intent with the characteristic data
             } else {
-                Log.i(TAG, "ACTION_DATA_READ: Error$status")
+                Log.i(TAG, "BLEGATT.......ACTION_DATA_READ: Error$status")
             }
 
         }
@@ -99,9 +98,11 @@ class BLEService : Service() {
         ) { //A request to Write has completed
             Util.makeLog("onCharacteristicWrite()")
             if (status == BluetoothGatt.GATT_SUCCESS) {                                 //See if the write was successful
-                Log.i(TAG, "**ACTION_DATA_WRITTEN**$characteristic")
+                Log.i(TAG, "BLEGATT.......ACTION_DATA_WRITTEN: Successful")
                 broadcastUpdate(BLEConstants.ACTION_DATA_WRITTEN,
                     characteristic)                   //Go broadcast an intent to say we have have written data
+            } else {
+                Log.i(TAG, "BLEGATT.......ACTION_DATA_WRITE: Error$status")
             }
         }
 
@@ -115,10 +116,9 @@ class BLEService : Service() {
             }
             if (characteristic != null) {
                 broadcastUpdate(BLEConstants.ACTION_DATA_AVAILABLE, characteristic)
+                Log.e(TAG, "**NOTIFICATION")
             }                     //Go broadcast an intent with the characteristic data
         }
-
-
     }
 
     // An activity has bound to this service
@@ -142,14 +142,13 @@ class BLEService : Service() {
     fun connect(address: String?): Boolean {
         try {
             if (mBluetoothAdapter == null || address == null) {                             //Check that we have a Bluetooth adappter and device address
-                Log.i(TAG,
-                    "BluetoothAdapter not initialized or unspecified address.")     //Log a warning that something went wrong
+                Util.makeLog("BluetoothAdapter not initialized or unspecified address.")     //Log a warning that something went wrong
                 return false                                                               //Failed to connect
             }
 
             // Previously connected device.  Try to reconnect.
             if (mBluetoothDeviceAddress != null && address == mBluetoothDeviceAddress && mBluetoothGatt != null) { //See if there was previous connection to the device
-                Log.i(TAG, "Trying to use an existing mBluetoothGatt for connection.")
+                Util.makeLog("Trying to use an existing mBluetoothGatt for connection.")
                 //See if we can connect with the existing BluetoothGatt to connect
                 //Success
                 //Were not able to connect
@@ -167,7 +166,7 @@ class BLEService : Service() {
 
             return true
         } catch (e: Exception) {
-            e.message?.let { Log.i(TAG, it) }
+            e.message?.let { Util.makeLog("Exception in connecting: $it") }
         }
         return false
     }
@@ -196,7 +195,8 @@ class BLEService : Service() {
                 dataValueNew = "$dataValueNew $singleData"
             }
             Log.i(TAG,
-                "MESSAGE Response Array Normal===> " + Util.byteArrayToHexString(value, false) + " UUID " + characteristic.uuid)
+                "MESSAGE Response Array Normal===> " + Util.byteArrayToHexString(value,
+                    false) + " UUID " + characteristic.uuid)
             intent.putExtra(BLEConstants.EXTRA_DATA, value)
             intent.putExtra(BLEConstants.EXTRA_UUID, characteristic.uuid.toString())
             sendBroadcast(intent)

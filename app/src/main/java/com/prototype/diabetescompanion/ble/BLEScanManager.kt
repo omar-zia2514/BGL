@@ -9,12 +9,11 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
-import android.os.ParcelUuid
 import android.util.Log
 import com.prototype.diabetescompanion.Util
 import java.util.*
 
-object BLEDeviceManager {
+object BLEScanManager {
 
     private val TAG = "BLEDeviceManager"
     private var scanCallback: ScanCallback? = null
@@ -60,7 +59,7 @@ object BLEDeviceManager {
                      * communication channel will create if its valid device.
                      */
 
-                    if (data.mDeviceName.contains("MLT-BT05")) {
+                    if (data.mDeviceName.contains("BT05")) {
                         mDeviceObject = data
                         stopScan(mDeviceObject)
                     }
@@ -94,7 +93,8 @@ object BLEDeviceManager {
      * setListener
      */
     fun setListener(onDeviceScanListener: OnDeviceScanListener) {
-        mOnDeviceScanListener = onDeviceScanListener
+        if (mOnDeviceScanListener == null)
+            mOnDeviceScanListener = onDeviceScanListener
     }
 
     /**
@@ -133,7 +133,7 @@ object BLEDeviceManager {
     private fun scan() {
         Util.makeLog("scan()")
         isScanning = true
-        mBluetoothAdapter?.bluetoothLeScanner?.startScan(scanFilters(),
+        mBluetoothAdapter?.bluetoothLeScanner?.startScan(null,
             scanSettings(), scanCallback) // Start BLE device Scanning in a separate thread
     }
 

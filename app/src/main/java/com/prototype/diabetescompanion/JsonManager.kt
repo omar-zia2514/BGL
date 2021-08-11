@@ -34,6 +34,11 @@ public class JsonManager {
                             reading.Timestamp)
                         readingJson.put("SensorValue", reading.SensorValue)
                         readingJson.put("PrickValue", reading.PrickValue)
+                        readingJson.put("Temperature", reading.Temperature)
+                        readingJson.put("FingerWidth", reading.FingerWidth)
+                        readingJson.put("Voltage", reading.Voltage)
+                        readingJson.put("DeviceId", reading.DeviceId)
+
                         readingsArray.put(readingJson)
                     }
                     patientArray.put(patientJson)
@@ -87,6 +92,10 @@ public class JsonManager {
                         reading.Timestamp)
                     readingJson.put("SensorValue", reading.SensorValue)
                     readingJson.put("PrickValue", reading.PrickValue)
+                    readingJson.put("Temperature", reading.Temperature)
+                    readingJson.put("FingerWidth", reading.FingerWidth)
+                    readingJson.put("Voltage", reading.Voltage)
+                    readingJson.put("DeviceId", reading.DeviceId)
                     readingsArray.put(readingJson)
                 }
                 patientArray.put(patientJson)

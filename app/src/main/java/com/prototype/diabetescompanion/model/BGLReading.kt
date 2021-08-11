@@ -35,6 +35,9 @@ class BGLReading(
     @ColumnInfo(name = "voltage")
     var Voltage: Float,
 
+    @ColumnInfo(name = "deviceId")
+    var DeviceId: Float,
+
     @ColumnInfo(name = "syncStatus")
     var SyncStatus: Int = 0,
 
