@@ -97,6 +97,8 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
     private val DReceived: Int = 8
     private val ESent: Int = 9
     private val EReceived: Int = 10
+    private val CommStart: Int = 11
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -1177,18 +1179,14 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                         e.printStackTrace()
                     }
                     showProgressLoader()
-                    state = ESent
+                    state = CommStart
                     BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
 //                    BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x4E))
                 }
                 BLEConstants.ACTION_DATA_AVAILABLE -> {
                     val data = intent.getByteArrayExtra(BLEConstants.EXTRA_DATA)
                     when (state) {
-                        ESent -> {
-                            state = EReceived
-                            currentReadingDeviceId =
-                                Util.hexToAscii(Util.byteArrayToHexString(data,
-                                    false)).toFloat()
+                        CommStart -> {
                             state = BSent
                             BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x41)) //body temp
                         }
@@ -1211,6 +1209,14 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                         DSent -> {
                             state = DReceived
                             currentReadingVoltage =
+                                Util.hexToAscii(Util.byteArrayToHexString(data,
+                                    false)).toFloat()
+                            state = ESent
+                            BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x45)) //DeviceID
+                        }
+                        ESent -> {
+                            state = EReceived
+                            currentReadingDeviceId =
                                 Util.hexToAscii(Util.byteArrayToHexString(data,
                                     false)).toFloat()
                             state = ASent

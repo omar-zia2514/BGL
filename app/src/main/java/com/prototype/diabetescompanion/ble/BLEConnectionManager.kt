@@ -208,7 +208,7 @@ object BLEConnectionManager {
                             var newChar = gattCharacteristic
 //                            newChar = setProperties(newChar)
                             charBGL = newChar
-                            writeCharToStartReceivingBGLValues(byteArrayOf(0x45)) //TODO change it to 45 //deviceId
+                            writeCharToStartReceivingBGLValues(byteArrayOf(0x42)) //N CommStart
                              mBLEService?.setCharacteristicNotification(gattCharacteristic, true)
 //                            mHandler = Handler() //no read for read as notification brings the updated value
 //                            mHandler?.postDelayed(
