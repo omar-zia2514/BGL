@@ -69,8 +69,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/btn_week"
         android:text="Day"
-        android:layout_marginHorizontal="6dp"
-        />
+        android:layout_marginHorizontal="6dp" />
 
     <Button
         android:id="@+id/btn_week"

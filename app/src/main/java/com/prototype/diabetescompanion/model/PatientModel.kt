@@ -16,6 +16,9 @@ class PatientModel(
     @ColumnInfo(name = "gender")
     var Gender: String,
 
+    @ColumnInfo(name = "dob")
+    var DOB: String,
+
     @ColumnInfo(name = "age")
     var Age: Int,
 

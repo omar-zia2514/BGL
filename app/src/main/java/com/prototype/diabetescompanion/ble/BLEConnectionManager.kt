@@ -83,6 +83,7 @@ object BLEConnectionManager {
      */
     fun disconnect() {
         if (null != mBLEService) {
+            mBLEService!!.setCharacteristicNotification(charBGL!!, false)
             mBLEService!!.disconnect()
 //            mBLEService = null
         }
@@ -90,7 +91,10 @@ object BLEConnectionManager {
     }
 
     fun writeCharToStartReceivingBGLValues(value: ByteArray) {
-        Util.makeLog("writeCharToStartReceivingBGLValues(): ${Util.byteArrayToHexString(value, false)}")
+        Util.makeLog("writeCharToStartReceivingBGLValues(): ${
+            Util.byteArrayToHexString(value,
+                false)
+        }")
         if (charBGL != null) {
             charBGL!!.value = value
             writeBLECharacteristic(charBGL)
@@ -205,11 +209,11 @@ object BLEConnectionManager {
                         if (uuid.equals(BLEConstants.BGL_CHAR_UUID,
                                 ignoreCase = true)
                         ) {
-                            var newChar = gattCharacteristic
+                            val newChar = gattCharacteristic
 //                            newChar = setProperties(newChar)
                             charBGL = newChar
                             writeCharToStartReceivingBGLValues(byteArrayOf(0x42)) //N CommStart
-                             mBLEService?.setCharacteristicNotification(gattCharacteristic, true)
+                            mBLEService?.setCharacteristicNotification(gattCharacteristic, true)
 //                            mHandler = Handler() //no read for read as notification brings the updated value
 //                            mHandler?.postDelayed(
 //                                readRun, 2000) // Delay Period

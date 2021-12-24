@@ -23,7 +23,7 @@ public class JsonManager {
                     }
                     patientJson.put("Name", patient.Name)
                     patientJson.put("Age", patient.Age)
-                    patientJson.put("Address", "")
+                    patientJson.put("Address", patient.DOB)
                     patientJson.put("Gender", patient.Gender)
                     patientJson.put("ContactNo", patient.ContactNumber)
                     patientJson.put("Readings", readingsArray)
@@ -37,6 +37,9 @@ public class JsonManager {
                         readingJson.put("Temperature", reading.Temperature)
                         readingJson.put("FingerWidth", reading.FingerWidth)
                         readingJson.put("Voltage", reading.Voltage)
+                        readingJson.put("SkinTone", reading.SkinTone)
+                        readingJson.put("NailTexture", reading.NailTexture)
+                        readingJson.put("NailPolish", reading.NailPolish)
                         readingJson.put("DeviceId", reading.DeviceId)
 
                         readingsArray.put(readingJson)
@@ -81,7 +84,7 @@ public class JsonManager {
                 }
                 patientJson.put("Name", patientData.Name)
                 patientJson.put("Age", patientData.Age)
-                patientJson.put("Address", "")
+                patientJson.put("Address", patientData.DOB)
                 patientJson.put("Gender", patientData.Gender)
                 patientJson.put("ContactNo", patientData.ContactNumber)
                 patientJson.put("Readings", readingsArray)
@@ -95,7 +98,11 @@ public class JsonManager {
                     readingJson.put("Temperature", reading.Temperature)
                     readingJson.put("FingerWidth", reading.FingerWidth)
                     readingJson.put("Voltage", reading.Voltage)
+                    readingJson.put("SkinTone", reading.SkinTone)
+                    readingJson.put("NailTexture", reading.NailTexture)
+                    readingJson.put("NailPolish", reading.NailPolish)
                     readingJson.put("DeviceId", reading.DeviceId)
+
                     readingsArray.put(readingJson)
                 }
                 patientArray.put(patientJson)

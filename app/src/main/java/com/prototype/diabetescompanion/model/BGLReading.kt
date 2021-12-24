@@ -35,6 +35,15 @@ class BGLReading(
     @ColumnInfo(name = "voltage")
     var Voltage: Float,
 
+    @ColumnInfo(name = "skinTone")
+    var SkinTone: Int,
+
+    @ColumnInfo(name = "nailTexture")
+    var NailTexture: Int,
+
+    @ColumnInfo(name = "nailPolish", defaultValue = "0")
+    var NailPolish: Int,
+
     @ColumnInfo(name = "deviceId")
     var DeviceId: Float,
 

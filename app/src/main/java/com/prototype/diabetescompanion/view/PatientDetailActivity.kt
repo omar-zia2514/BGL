@@ -14,10 +14,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -68,6 +65,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
 
     private val REQUEST_LOCATION_PERMISSION = 2018
     private val REQUEST_ENABLE_BT = 1000
+    private var isCommandSent = false
     private val TAG = "diabetesDebug"
     private lateinit var etxtSensorVal: EditText
 
@@ -83,8 +81,10 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
     var currentReadingTemperature: Float = 0F
     var currentReadingFingerWidth: Float = 0F
     var currentReadingVoltage: Float = 0F
+    var currentReadingSkinTone: Int = 3
+    var currentReadingNailTexture: Int = 2
+    var currentReadingNailPolish: Int = 0
     var currentReadingDeviceId: Float = 0F
-
 
     private var state: Int = 0
     private val ASent: Int = 1
@@ -1025,6 +1025,9 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
         val v: View = layoutInflater.inflate(R.layout.new_reading_form, null)
         val etxtPrickVal = v.findViewById<View>(R.id.etxt_prick_value) as EditText
         etxtSensorVal = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
+        val rGroupSkin = v.findViewById<View>(R.id.skin_radio_group) as RadioGroup
+        val rGroupNail = v.findViewById<View>(R.id.nail_radio_group) as RadioGroup
+
         builder.setView(v)
         builder.setPositiveButton("Save", null)
         builder.setNeutralButton("Read BGL ", null)
@@ -1038,7 +1041,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
 
             buttonPositive.setOnClickListener {
                 if (etxtPrickVal.text.toString().isEmpty() || etxtSensorVal.text.toString()
-                        .isEmpty()
+                        .isEmpty() || rGroupSkin.checkedRadioButtonId == -1 || rGroupNail.checkedRadioButtonId == -1
                 ) {
                     Toast.makeText(context, "Please fill the values", Toast.LENGTH_SHORT).show()
 //                    BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x44))
@@ -1047,6 +1050,8 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                 val timestampString = Util.getCurrentTimeStamp()
                 val valuesString =
                     etxtPrickVal.text.toString() + " - " + etxtSensorVal.text.toString()
+                currentReadingSkinTone = getRadioLogicSkin(rGroupSkin.checkedRadioButtonId)
+                currentReadingNailTexture = getRadioLogicNail(rGroupNail.checkedRadioButtonId)
                 diabetesViewModel.insertReading(context,
                     BGLReading(patientId,
                         timestampString,
@@ -1055,6 +1060,9 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                         currentReadingTemperature,
                         currentReadingFingerWidth,
                         currentReadingVoltage,
+                        currentReadingSkinTone,
+                        currentReadingNailTexture,
+                        1,
                         currentReadingDeviceId,
                         0))
 
@@ -1066,6 +1074,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                 dialog.dismiss()
             }
             buttonNeutral.setOnClickListener {
+                isCommandSent = true
                 checkLocationPermission()
             }
             buttonNegative.setOnClickListener {
@@ -1170,18 +1179,22 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                 }
                 BLEConstants.ACTION_GATT_DISCONNECTED -> {
                     Log.i(TAG, "ACTION_GATT_DISCONNECTED ")
+                    isCommandSent = false
+                    dismissProgressLoader()
                 }
                 BLEConstants.ACTION_GATT_SERVICES_DISCOVERED -> {
                     Log.i(TAG, "ACTION_GATT_SERVICES_DISCOVERED ")
-                    try {
-                        Thread.sleep(500)
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
-                    }
-                    showProgressLoader()
-                    state = CommStart
-                    BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
+                    if (isCommandSent) {
+                        try {
+                            Thread.sleep(500)
+                        } catch (e: InterruptedException) {
+                            e.printStackTrace()
+                        }
+                        showProgressLoader()
+                        state = CommStart
+                        BLEConnectionManager.findBLEGattService(this@PatientDetailActivity)
 //                    BLEConnectionManager.writeCharToStartReceivingBGLValues(byteArrayOf(0x4E))
+                    }
                 }
                 BLEConstants.ACTION_DATA_AVAILABLE -> {
                     val data = intent.getByteArrayExtra(BLEConstants.EXTRA_DATA)
@@ -1283,6 +1296,8 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
         val dialog = builder.create()
         val etxtPrickValue = v.findViewById<View>(R.id.etxt_prick_value) as EditText
         etxtSensorVal = v.findViewById<View>(R.id.etxt_sensor_value) as EditText
+        val rGroupSkin = v.findViewById<View>(R.id.skin_radio_group) as RadioGroup
+        val rGroupNail = v.findViewById<View>(R.id.nail_radio_group) as RadioGroup
 
         dialog.setOnShowListener {
             val buttonPositive: Button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
@@ -1291,10 +1306,13 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
             buttonPositive.setOnClickListener {
 
                 if (etxtPrickValue.text.toString().trim()
-                        .isEmpty() || etxtSensorVal.text.toString().trim().isEmpty()
+                        .isEmpty() || etxtSensorVal.text.toString().trim()
+                        .isEmpty() || rGroupSkin.checkedRadioButtonId == -1 || rGroupNail.checkedRadioButtonId == -1
                 ) {
                     Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 } else {
+                    currentReadingSkinTone = getRadioLogicSkin(rGroupSkin.checkedRadioButtonId)
+                    currentReadingNailTexture = getRadioLogicNail(rGroupNail.checkedRadioButtonId)
                     val updatedReading = BGLReading(reading.PatientId,
                         reading.Timestamp,
                         etxtPrickValue.text.toString().trim().toFloat(),
@@ -1302,6 +1320,9 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                         currentReadingTemperature,
                         currentReadingFingerWidth,
                         currentReadingVoltage,
+                        currentReadingSkinTone,
+                        currentReadingNailTexture,
+                        currentReadingNailPolish,
                         currentReadingDeviceId, 0)
                     updatedReading.Id = reading.Id
                     diabetesViewModel.updateReading(context, updatedReading)
@@ -1310,6 +1331,7 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
                 }
             }
             buttonNeutral.setOnClickListener {
+                isCommandSent = true
                 checkLocationPermission()
             }
             buttonNegative.setOnClickListener {
@@ -1318,6 +1340,26 @@ class PatientDetailActivity : AppCompatActivity(), OnDeviceScanListener, Adapter
             }
         }
         dialog.show()
+    }
+
+    private fun getRadioLogicSkin(id: Int): Int {
+        return when (id) {
+            R.id.vfair -> 1
+            R.id.fair -> 2
+            R.id.normal -> 3
+            R.id.dark -> 4
+            R.id.vdark -> 5
+            else -> 3
+        }
+    }
+
+    private fun getRadioLogicNail(id: Int): Int {
+        return when (id) {
+            R.id.clear -> 1
+            R.id.normal_texture -> 2
+            R.id.hard -> 3
+            else -> 2
+        }
     }
 
     private fun initDeleteConfirmationDialog(context: Context, reading: BGLReading) {

@@ -130,6 +130,7 @@ class SignInActivity : AppCompatActivity() {
         val monthNow = c.get(Calendar.MONTH)
         val dayNow = c.get(Calendar.DAY_OF_MONTH)
         var yearOfBirth = 0
+        var dob: String = ""
 
         binding.btnDob.setOnClickListener {
 //            val dpd = DatePickerDialog(context, DatePickerDialog.OnDateSetListener(function = ))
@@ -137,8 +138,9 @@ class SignInActivity : AppCompatActivity() {
             val dpd = DatePickerDialog(this, { view, yearSelected, monthSelected, daySelected ->
                 // Display Selected date in TextView
                 yearOfBirth = yearSelected
-                binding.btnDob.text =
-                    "" + daySelected + "/" + (monthSelected + 1) + "/" + yearSelected
+                dob = "" + daySelected + "/" + (monthSelected + 1) + "/" + yearSelected
+                binding.btnDob.text = dob
+
             }, yearNow, monthNow, dayNow)
             dpd.show()
 
@@ -168,7 +170,7 @@ class SignInActivity : AppCompatActivity() {
             val mobileNumber = binding.etxtNumber.text.toString()
             val age = yearNow - yearOfBirth
             diabetesViewModel.insertPatient(context,
-                PatientModel(name, mobileNumber, selectedGender, age, DoctorId = 0))
+                PatientModel(name, mobileNumber, selectedGender,dob, age, DoctorId = 0))
 
             SharedPreferences.setPatientCreated(context, true)
             SharedPreferences.setSignedInProfile(context,

@@ -106,6 +106,7 @@ class PatientAdapter(var ctx: Context) :
                     } else {
                         val updatedPatient = PatientModel(etxtPatientName.text.toString(), "",
                             radioButton.text.toString(),
+                            dataSet[position].DOB,
                             etxtPatientAge.text.toString().toInt(10),
                             dataSet[position].LastReading,
                             dataSet[position].LastReadingTimestamp)

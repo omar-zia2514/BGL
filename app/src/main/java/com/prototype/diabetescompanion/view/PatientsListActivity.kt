@@ -185,6 +185,7 @@ class PatientsListActivity : AppCompatActivity(), AdapterToActivity {
                         PatientModel(etxtPatientName.text.toString(),
                             "",
                             radioButton.text.toString(),
+                            "",
                             etxtPatientAge.text.toString().toInt(10)))
                     dialog.dismiss()
                 }

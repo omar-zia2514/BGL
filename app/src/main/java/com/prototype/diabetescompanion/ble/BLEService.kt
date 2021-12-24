@@ -23,6 +23,7 @@ class BLEService : Service() {
         null//BluetoothGatt controls the Bluetooth communication link
     private var mBluetoothDeviceAddress: String? = null//Address of the connected BLE device
     private val mCompleResponseByte = ByteArray(100)
+    private var setPropertiesRetry = 0
 
 
     private val mGattCallback = object : BluetoothGattCallback() {
@@ -48,6 +49,7 @@ class BLEService : Service() {
             status: Int,
         ) {              //BLE service discovery complete
             Util.makeLog("onServicesDiscovered()")
+            setPropertiesRetry = 0
             if (status == BluetoothGatt.GATT_SUCCESS) {                                 //See if the service discovery was successful
                 Log.i(TAG, "**BLEGATT.......ACTION_SERVICE_DISCOVERED**$status")
                 broadcastUpdate(BLEConstants.ACTION_GATT_SERVICES_DISCOVERED)                       //Go broadcast an intent to say we have discovered services
@@ -282,9 +284,8 @@ class BLEService : Service() {
     // Disconnects an existing connection or cancel a pending connection
     // BluetoothGattCallback.onConnectionStateChange() will get the result
     fun disconnect() {
-
+        Util.makeLog("DISCONNECT METHOD")
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {                      //Check that we have a GATT connection to disconnect
-
             return
         }
         mBluetoothGatt?.disconnect()                                                    //Disconnect GATT connection
@@ -379,12 +380,21 @@ class BLEService : Service() {
                     val status = mBluetoothGatt!!.writeDescriptor(des)
                     Log.i(TAG,
                         "***********************SET CHARACTERISTIC NOTIFICATION STATUS: $status**")//Write the descriptor
+                    Log.i(TAG,
+                        "***********************SET CHARACTERISTIC NOTIFICATION RETRY: $setPropertiesRetry**")//Write the descriptor
+                    if (!status) {
+                        if (setPropertiesRetry < 5) {
+                            setPropertiesRetry++
+                            setCharacteristicNotification(characteristic, true)
+                        } else {
+                            disconnect()
+                            broadcastUpdate(BLEConstants.ACTION_GATT_DISCONNECTED)
+                        }
+                    }
                 }
-
             }
         } catch (e: Exception) {
             e.message?.let { Log.i(TAG, it) }
         }
     }
-
 }
